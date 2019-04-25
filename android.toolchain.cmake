@@ -515,9 +515,11 @@ elseif(NOT IS_DIRECTORY "${CMAKE_SYSROOT}")
   message(FATAL_ERROR "Invalid Android sysroot: ${CMAKE_SYSROOT}.")
 endif()
 
+# https://github.com/android-ndk/ndk/issues/243
+# unlike the original toolchain file, we don't add the '-g' flag
+
 # Generic flags.
 list(APPEND ANDROID_COMPILER_FLAGS
-  -g
   -DANDROID
   -ffunction-sections
   -funwind-tables
