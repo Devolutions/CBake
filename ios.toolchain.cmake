@@ -61,6 +61,7 @@ set(IOS_PLATFORM ${IOS_PLATFORM} CACHE STRING
 
 # Check the platform selection and setup for developer root
 if ("${IOS_PLATFORM}" STREQUAL "OS")
+  set (XCODE_PLATFORM iPhoneOS)
   set (IOS_PLATFORM_LOCATION "iPhoneOS.platform")
   set (XCODE_IOS_PLATFORM iphoneos)
   set (IOS_ARCH armv7 armv7s arm64)
@@ -69,6 +70,7 @@ if ("${IOS_PLATFORM}" STREQUAL "OS")
   set (CMAKE_XCODE_EFFECTIVE_PLATFORMS "-iphoneos")
 elseif ("${IOS_PLATFORM}" STREQUAL "SIMULATOR")
   set (SIMULATOR true)
+  set (XCODE_PLATFORM iPhoneSimulator)
   set (IOS_PLATFORM_LOCATION "iPhoneSimulator.platform")
   set (XCODE_IOS_PLATFORM iphonesimulator)
   set (IOS_ARCH i386 x86_64)
@@ -112,6 +114,13 @@ execute_process(COMMAND xcodebuild -sdk ${CMAKE_IOS_SDK_ROOT} -version SDKVersio
   ERROR_QUIET
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+execute_process(COMMAND xcode-select -p OUTPUT_VARIABLE XCODE_DEVELOPER_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(XCODE_CPP_INCLUDE_DIR "${XCODE_DEVELOPER_DIR}/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1")
+set(XCODE_SDK_INCLUDE_DIR "${XCODE_DEVELOPER_DIR}/Platforms/${XCODE_PLATFORM}.platform/Developer/SDKs/${XCODE_PLATFORM}.sdk/usr/include")
+
+set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES "${XCODE_CPP_INCLUDE_DIR}")
+include_directories(BEFORE SYSTEM "${XCODE_SDK_INCLUDE_DIR}")
+
 set (CMAKE_OSX_SYSROOT ${XCODE_IOS_PLATFORM})
 
 # Specify minimum version of deployment target.
@@ -123,6 +132,7 @@ endif ()
 set(XCODE_IOS_PLATFORM_VERSION_FLAGS "-m${XCODE_IOS_PLATFORM}-version-min=${IOS_DEPLOYMENT_TARGET}")
 
 if(CMAKE_GENERATOR MATCHES "Xcode")
+    set(CMAKE_XCODE_ATTRIBUTE_ARCHS "${IOS_ARCH}")
     set(CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "${IOS_DEPLOYMENT_TARGET}")
 endif()
 
@@ -139,9 +149,6 @@ set (APPLE_IOS TRUE)
 
 # Force unset of OS X-specific deployment target (otherwise autopopulated), required as of cmake 2.8.10.
 set(CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Must be empty for iOS builds." FORCE)
-
-#set (CMAKE_C_COMPILER "/usr/bin/clang")
-#set (CMAKE_CXX_COMPILER "/usr/bin/clang++")
 
 # Find the C & C++ compilers for the specified SDK.
 if (NOT CMAKE_C_COMPILER)
@@ -212,7 +219,7 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 
 # Set the find root to the iOS developer roots and to user defined paths.
 set(CMAKE_FIND_ROOT_PATH ${CMAKE_IOS_DEVELOPER_ROOT} ${CMAKE_IOS_SDK_ROOT}
-  ${CMAKE_PREFIX_PATH} CACHE string  "iOS find search path root" FORCE)
+  ${CMAKE_PREFIX_PATH} CACHE STRING "iOS find search path root" FORCE)
 
 # Default to searching for frameworks first.
 set(CMAKE_FIND_FRAMEWORK FIRST)
