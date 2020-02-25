@@ -307,7 +307,7 @@ set(CMAKE_SYSTEM_NAME Android)
 # they can use their own.
 # https://github.com/android-ndk/ndk/issues/517
 if(NOT CMAKE_FIND_ROOT_PATH_MODE_PROGRAM)
-  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
 endif()
 
 if(NOT CMAKE_FIND_ROOT_PATH_MODE_LIBRARY)
