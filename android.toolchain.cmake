@@ -53,22 +53,12 @@ endif(ANDROID_NDK_TOOLCHAIN_INCLUDED)
 set(ANDROID_NDK_TOOLCHAIN_INCLUDED true)
 
 # Android NDK
-get_filename_component(ANDROID_NDK_EXPECTED_PATH
-    "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
-if(NOT ANDROID_NDK)
-  set(ANDROID_NDK "${ANDROID_NDK_EXPECTED_PATH}")
-else()
-  # Allow the user to specify their own NDK path, but emit a warning. This is an
-  # uncommon use case, but helpful if users want to use a bleeding edge
-  # toolchain file with a stable NDK.
-  # https://github.com/android-ndk/ndk/issues/473
-  get_filename_component(ANDROID_NDK "${ANDROID_NDK}" ABSOLUTE)
-  if(NOT "${ANDROID_NDK}" STREQUAL "${ANDROID_NDK_EXPECTED_PATH}")
-    message(STATUS "Using custom NDK path (ANDROID_NDK is set): ${ANDROID_NDK}")
-  endif()
+if(DEFINED ANDROID_NDK)
+  set(ENV{ANDROID_NDK} "${ANDROID_NDK}")
 endif()
-unset(ANDROID_NDK_EXPECTED_PATH)
-file(TO_CMAKE_PATH "${ANDROID_NDK}" ANDROID_NDK)
+
+set(ANDROID_NDK "$ENV{ANDROID_NDK}")
+message(STATUS "ANDROID NDK: ${ANDROID_NDK}")
 
 # Android NDK revision
 # Possible formats:
