@@ -1,8 +1,6 @@
-set(CMAKE_SYSTEM_NAME Windows)
-set(CMAKE_SYSTEM_PROCESSOR i686)
 
-set(VSCMD_ARG_HOST_ARCH "x64")
-set(VSCMD_ARG_TGT_ARCH "x86")
+set(WIN32 TRUE)
+set(MSVC TRUE)
 
 set(PROGRAM_FILES_X86_STR "PROGRAMFILES(X86)")
 file(TO_CMAKE_PATH "$ENV{${PROGRAM_FILES_X86_STR}}" PROGRAM_FILES_X86)
@@ -11,14 +9,17 @@ set(VCToolsVersion "14.24.28314")
 set(VCINSTALLDIR "${PROGRAM_FILES_X86}/Microsoft Visual Studio/2019/Community/VC/")
 set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/")
 
-set(VCToolsPath "${VCToolsInstallDir}bin/Host${VSCMD_ARG_HOST_ARCH}/${VSCMD_ARG_TGT_ARCH}/")
+set(VCToolsPath "${VCToolsInstallDir}bin/Host${HOST_ARCH}/${TARGET_ARCH}/")
 
+# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots
+# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0
 set(WindowsSdkVersion "10.0.18362.0/")
 set(WindowsSdkLibVersion "10.0.18362.0/")
 set(WindowsSdkDir "${PROGRAM_FILES_X86}/Windows Kits/10/")
 set(WindowsSdkVerBinPath "${WindowsSdkDir}bin/${WindowsSdkVersion}")
-set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${VSCMD_ARG_HOST_ARCH}/")
+set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${HOST_ARCH}/")
 
+# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.8
 set(NETFXSDKDir "${PROGRAM_FILES_X86}/Windows Kits/NETFXSDK/4.8/")
 
 set(CMAKE_C_COMPILER "${VCToolsPath}cl.exe" CACHE FILEPATH "")
@@ -30,17 +31,17 @@ set(CMAKE_MT "${WindowsSdkToolsPath}mt.exe" CACHE FILEPATH "")
 # LIB, LIBPATH, INCLUDE, PATH
 
 set(LIB
-	"${VCToolsInstallDir}ATLMFC/lib/${VSCMD_ARG_TGT_ARCH}"
-	"${VCToolsInstallDir}lib/${VSCMD_ARG_TGT_ARCH}"
-	"${NETFXSDKDir}lib/um/${VSCMD_ARG_TGT_ARCH}"
-	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}ucrt/${VSCMD_ARG_TGT_ARCH}"
-	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}um/${VSCMD_ARG_TGT_ARCH}"
+	"${VCToolsInstallDir}ATLMFC/lib/${TARGET_ARCH}"
+	"${VCToolsInstallDir}lib/${TARGET_ARCH}"
+	"${NETFXSDKDir}lib/um/${TARGET_ARCH}"
+	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}ucrt/${TARGET_ARCH}"
+	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}um/${TARGET_ARCH}"
 	)
 
 set(LIBPATH
-	"${VCToolsInstallDir}ATLMFC/lib/${VSCMD_ARG_TGT_ARCH}"
-	"${VCToolsInstallDir}lib/${VSCMD_ARG_TGT_ARCH}"
-	"${VCToolsInstallDir}lib/${VSCMD_ARG_TGT_ARCH}/x86/store/references"
+	"${VCToolsInstallDir}ATLMFC/lib/${TARGET_ARCH}"
+	"${VCToolsInstallDir}lib/${TARGET_ARCH}"
+	"${VCToolsInstallDir}lib/${TARGET_ARCH}/x86/store/references"
 	"${WindowsSdkDir}UnionMetadata/${WindowsSdkLibVersion}"
 	"${WindowsSdkDir}References/${WindowsSdkLibVersion}"
 	)
