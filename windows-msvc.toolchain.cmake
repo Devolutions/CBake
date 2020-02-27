@@ -11,16 +11,32 @@ set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/")
 
 set(VCToolsPath "${VCToolsInstallDir}bin/Host${HOST_ARCH}/${TARGET_ARCH}/")
 
-# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots
-# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0
-set(WindowsSdkVersion "10.0.18362.0/")
-set(WindowsSdkLibVersion "10.0.18362.0/")
-set(WindowsSdkDir "${PROGRAM_FILES_X86}/Windows Kits/10/")
+# Detect WindowsSdkDir ("C:\Program Files (x86)\Windows Kits\10\")
+# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots;KitsRoot10
+# Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\Windows\v10.0;InstallationFolder
+get_filename_component(KITS_ROOT_10
+	"[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\Windows\\v10.0;InstallationFolder]" ABSOLUTE CACHE)
+file(TO_CMAKE_PATH "${KITS_ROOT_10}" WindowsSdkDir)
+string(APPEND WindowsSdkDir "/")
+
+# Detect Windows SDK version (10.0.18362)
+file(GLOB WINSDKVER_HEADERS LIST_DIRECTORIES TRUE "${WindowsSdkDir}include/10.*/um/winsdkver.h")
+foreach(WINSDKVER_HEADER ${WINSDKVER_HEADERS})
+	string(REGEX MATCH "include/(10\\.[0-9\\.]+\\.[0-9\\.]+\\.[0-9\\.]+)/um/winsdkver.h" _MATCH "${WINSDKVER_HEADER}")
+	set(WINSDK_VERSION ${CMAKE_MATCH_1})
+endforeach()
+
+set(WindowsSdkVersion "${WINSDK_VERSION}/")
+set(WindowsSdkLibVersion "${WINSDK_VERSION}/")
 set(WindowsSdkVerBinPath "${WindowsSdkDir}bin/${WindowsSdkVersion}")
 set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${HOST_ARCH}/")
 
+# Detect NETFXSDKDir ("C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\")
 # Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.8
-set(NETFXSDKDir "${PROGRAM_FILES_X86}/Windows Kits/NETFXSDK/4.8/")
+get_filename_component(NETFXSDK_KITS_INSTALLATION_FOLDER
+	"[HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Microsoft SDKs\\NETFXSDK\\4.8;KitsInstallationFolder]" ABSOLUTE CACHE)
+file(TO_CMAKE_PATH "${NETFXSDK_KITS_INSTALLATION_FOLDER}" NETFXSDKDir)
+string(APPEND NETFXSDKDir "/")
 
 set(CMAKE_C_COMPILER "${VCToolsPath}cl.exe" CACHE FILEPATH "")
 set(CMAKE_CXX_COMPILER "${VCToolsPath}cl.exe" CACHE FILEPATH "")
