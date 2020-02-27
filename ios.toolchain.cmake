@@ -231,9 +231,10 @@ set(CMAKE_SYSTEM_FRAMEWORK_PATH
   ${CMAKE_IOS_SDK_ROOT}/Developer/Library/Frameworks)
 
 # Only search the specified iOS SDK, not the remainder of the host filesystem.
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 
 # Find (Apple's) libtool.
 execute_process(COMMAND xcrun -sdk ${CMAKE_IOS_SDK_ROOT} -find libtool
