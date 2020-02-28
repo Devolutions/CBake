@@ -5,11 +5,33 @@ set(MSVC TRUE)
 set(PROGRAM_FILES_X86_STR "PROGRAMFILES(X86)")
 file(TO_CMAKE_PATH "$ENV{${PROGRAM_FILES_X86_STR}}" PROGRAM_FILES_X86)
 
-set(VCToolsVersion "14.24.28314")
-set(VCINSTALLDIR "${PROGRAM_FILES_X86}/Microsoft Visual Studio/2019/Community/VC/")
-set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/")
+# Detect vswhere command-line tool
+find_program(VSWHERE vswhere
+	PATHS "${PROGRAM_FILES_X86}/Microsoft Visual Studio/Installer")
 
+# Detect VSINSTALLDIR ("C:\Program Files (x86)\Microsoft Visual Studio\2019\Community")
+execute_process(COMMAND ${VSWHERE} -latest -products *
+	-requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64
+	-property installationPath
+	OUTPUT_VARIABLE VSINSTALLDIR
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+file(TO_CMAKE_PATH "${VSINSTALLDIR}" VSINSTALLDIR)
+string(APPEND VSINSTALLDIR "/")
+
+# Detect VCINSTALLDIR ("C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC")
+set(VCINSTALLDIR "${VSINSTALLDIR}VC")
+
+# Detect VCToolsVersion, VCToolsInstallDir
+# https://github.com/microsoft/vswhere/wiki/Find-VC
+
+file(READ "${VCINSTALLDIR}/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt" VCToolsVersion)
+string(STRIP "${VCToolsVersion}" VCToolsVersion)
+set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/")
 set(VCToolsPath "${VCToolsInstallDir}bin/Host${HOST_ARCH}/${TARGET_ARCH}/")
+
+message(STATUS "VCToolsVersion: ${VCToolsVersion}")
+message(STATUS "VCINSTALLDIR: ${VCINSTALLDIR}")
 
 # Detect WindowsSdkDir ("C:\Program Files (x86)\Windows Kits\10\")
 # Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots;KitsRoot10
@@ -30,6 +52,9 @@ set(WindowsSdkVersion "${WINSDK_VERSION}/")
 set(WindowsSdkLibVersion "${WINSDK_VERSION}/")
 set(WindowsSdkVerBinPath "${WindowsSdkDir}bin/${WindowsSdkVersion}")
 set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${HOST_ARCH}/")
+
+message(STATUS "WindowsSdkVersion: ${WINSDK_VERSION}")
+message(STATUS "WindowsSdkDir: ${WindowsSdkDir}")
 
 # Detect NETFXSDKDir ("C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\")
 # Computer\HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Microsoft SDKs\NETFXSDK\4.8
