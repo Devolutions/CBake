@@ -52,13 +52,67 @@ if(ANDROID_NDK_TOOLCHAIN_INCLUDED)
 endif(ANDROID_NDK_TOOLCHAIN_INCLUDED)
 set(ANDROID_NDK_TOOLCHAIN_INCLUDED true)
 
-# Android NDK
+# Detect ANDROID_HOME, ANDROID_SDK_ROOT environment variables
+# https://developer.android.com/studio/command-line/variables
+
+# ANDROID_HOME
+if(DEFINED ANDROID_HOME)
+  set(ENV{ANDROID_HOME} "${ANDROID_HOME}")
+endif()
+
+if(DEFINED ENV{ANDROID_HOME})
+  set(ANDROID_HOME "$ENV{ANDROID_HOME}")
+endif()
+
+# ANDROID_SDK_ROOT
+if(DEFINED ANDROID_SDK_ROOT)
+  set(ENV{ANDROID_SDK_ROOT} "${ANDROID_SDK_ROOT}")
+endif()
+
+if(DEFINED ANDROID_SDK_ROOT)
+  set(ANDROID_SDK_ROOT "$ENV{ANDROID_SDK_ROOT}")
+endif()
+
+if(DEFINED ANDROID_HOME AND (NOT DEFINED ANDROID_SDK_ROOT))
+  set(ANDROID_SDK_ROOT "${ANDROID_HOME}")
+endif()
+
+# ANDROID_HOME is deprecated, use ANDROID_SDK_ROOT
+message(STATUS "ANDROID_SDK_ROOT: ${ANDROID_SDK_ROOT}")
+
+# ANDROID_NDK
 if(DEFINED ANDROID_NDK)
   set(ENV{ANDROID_NDK} "${ANDROID_NDK}")
 endif()
 
-set(ANDROID_NDK "$ENV{ANDROID_NDK}")
-message(STATUS "ANDROID NDK: ${ANDROID_NDK}")
+if(DEFINED ENV{ANDROID_NDK})
+  set(ANDROID_NDK "$ENV{ANDROID_NDK}")
+endif()
+
+# Detect side-by-side Android NDK installation
+if(NOT DEFINED ANDROID_NDK)
+  file(GLOB ANDROID_NDK_SOURCE_PROPERTIES_LIST LIST_DIRECTORIES TRUE "${ANDROID_SDK_ROOT}/ndk/*/source.properties")
+  list(SORT ANDROID_NDK_SOURCE_PROPERTIES_LIST)
+  foreach(ANDROID_NDK_SOURCE_PROPERTIES ${ANDROID_NDK_SOURCE_PROPERTIES_LIST})
+    string(REGEX MATCH "ndk/([0-9\\.]+\\.[0-9\\.]+\\.[0-9\\.]+)/source.properties" _MATCH "${ANDROID_NDK_SOURCE_PROPERTIES}")
+    set(ANDROID_NDK_VERSION ${CMAKE_MATCH_1})
+    get_filename_component(ANDROID_NDK "${ANDROID_NDK_SOURCE_PROPERTIES}" DIRECTORY)
+  endforeach()
+endif()
+
+# Detect older ndk-bundle Android NDK installation
+if(NOT DEFINED ANDROID_NDK)
+  if(EXISTS "${ANDROID_SDK_ROOT}/ndk-bundle/source.properties")
+    set(ANDROID_NDK "${ANDROID_SDK_ROOT}/ndk-bundle")
+    message(STATUS "Android NDK-bundle ${ANDROID_NDK}")
+  endif()
+endif()
+
+if(NOT DEFINED ANDROID_NDK)
+  message(FATAL_ERROR "Android SDK could not be found!")
+endif()
+
+message(STATUS "ANDROID_NDK: ${ANDROID_NDK}")
 
 # Android NDK revision
 # Possible formats:
