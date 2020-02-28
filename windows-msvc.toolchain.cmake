@@ -20,7 +20,7 @@ file(TO_CMAKE_PATH "${VSINSTALLDIR}" VSINSTALLDIR)
 string(APPEND VSINSTALLDIR "/")
 
 # Detect VCINSTALLDIR ("C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC")
-set(VCINSTALLDIR "${VSINSTALLDIR}VC")
+set(VCINSTALLDIR "${VSINSTALLDIR}VC/")
 
 # Detect VCToolsVersion, VCToolsInstallDir
 # https://github.com/microsoft/vswhere/wiki/Find-VC
