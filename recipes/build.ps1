@@ -81,6 +81,25 @@ function Optimize-Sysroot() {
     Remove-ExcludedFiles $RootPath
 }
 
+function Get-CbakePath() {
+    [CmdletBinding()]
+	param(
+        [Parameter(Mandatory=$true,Position=0)]
+        [ValidateSet("home","cmake","sysroots","packages","recipes")]
+        [string] $PathName = "home"
+    )
+
+    $CBakeHome = Split-Path $PSScriptRoot -Parent
+
+    switch ($PathName) {
+        "home" { $CBakeHome }
+        "cmake" { Join-Path $CBakeHome "cmake" }
+        "sysroots" { Join-Path $CBakeHome "sysroots" }
+        "packages" { Join-Path $CBakeHome "packages" }
+        "recipes" { Join-Path $CBakeHome "recipes" }
+    }
+}
+
 function New-Sysroot {
 	param(
 		[Parameter(Mandatory=$true)]
@@ -90,8 +109,8 @@ function New-Sysroot {
 	)
 
     Push-Location
-    Set-Location $distro
     $ImageName = "$distro-sysroot"
+    Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro)
     $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
@@ -105,8 +124,9 @@ function New-Sysroot {
     Optimize-Sysroot $ExportPath
 
     Write-Host "Compressing $distro-$arch sysroot"
-    Remove-Item -Path "$distro-$arch-sysroot.tar.xz" -Force -ErrorAction 'SilentlyContinue' | Out-Null
-    & 'tar' 'cfJ' "$distro-$arch-sysroot.tar.xz" "$distro-$arch"
+    $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
+    Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
+    & 'tar' 'cfJ' $PackageFile "$distro-$arch"
     Pop-Location
 }
 
