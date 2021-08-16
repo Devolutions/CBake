@@ -1,4 +1,3 @@
-#!/usr/bin/env pwsh
 
 function Convert-SymbolicLinks() {
     [CmdletBinding()]
@@ -84,12 +83,12 @@ function Optimize-Sysroot() {
 function Get-CbakePath() {
     [CmdletBinding()]
 	param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Position=0)]
         [ValidateSet("home","cmake","sysroots","packages","recipes")]
         [string] $PathName = "home"
     )
 
-    $CBakeHome = Split-Path $PSScriptRoot -Parent
+    $CBakeHome = $PSScriptRoot
 
     switch ($PathName) {
         "home" { $CBakeHome }
@@ -100,7 +99,7 @@ function Get-CbakePath() {
     }
 }
 
-function New-Sysroot {
+function New-CBakeSysroot {
 	param(
 		[Parameter(Mandatory=$true)]
 		[string] $Distro,
@@ -110,7 +109,7 @@ function New-Sysroot {
 
     Push-Location
     $ImageName = "$distro-sysroot"
-    Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro)
+    Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
     $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
@@ -129,5 +128,3 @@ function New-Sysroot {
     & 'tar' 'cfJ' $PackageFile "$distro-$arch"
     Pop-Location
 }
-
-New-Sysroot @args
