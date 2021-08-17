@@ -1,10 +1,22 @@
 set(CMAKE_SYSTEM_NAME Linux)
 
-set(SYSROOT_NAME "$ENV{SYSROOT_NAME}" CACHE STRING "" FORCE)
+if(LINUX_TOOLCHAIN_INCLUDED)
+    return() # avoid double-loading issue
+endif()
+set(LINUX_TOOLCHAIN_INCLUDED TRUE)
+
+if(DEFINED SYSROOT_NAME)
+    set(ENV{SYSROOT_NAME} "${SYSROOT_NAME}")
+endif()
+
+if(DEFINED ENV{SYSROOT_NAME})
+    set(SYSROOT_NAME "$ENV{SYSROOT_NAME}" CACHE STRING "" FORCE)
+endif()
 
 if(NOT DEFINED SYSROOT_NAME)
     message(FATAL_ERROR "SYSROOT_NAME not defined!")
 endif()
+set(SYSROOT_NAME "${SYSROOT_NAME}" CACHE STRING "" FORCE)
 
 string(REGEX REPLACE "([^-]+)-[^-]+-[^-]+" "\\1" SYSROOT_DISTRO ${SYSROOT_NAME})
 string(REGEX REPLACE "[^-]+-([^-]+)-[^-]+" "\\1" SYSROOT_VERSION ${SYSROOT_NAME})
@@ -18,8 +30,13 @@ else()
     message(FATAL_ERROR "Unknown sysroot architecture: ${SYSROOT_ARCH}")
 endif()
 
-set(SYSROOT_PATH "$ENV{SYSROOT_PATH}" CACHE STRING "" FORCE)
-set(CMAKE_SYSROOT "${SYSROOT_PATH}/${SYSROOT_NAME}" CACHE STRING "" FORCE)
+get_filename_component(CBAKE_HOME "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE CACHE)
+
+if(NOT IS_DIRECTORY "${CBAKE_HOME}")
+    message(FATAL_ERROR "CBAKE_HOME directory does not exist: ${CBAKE_HOME}")
+endif()
+
+set(CMAKE_SYSROOT "${CBAKE_HOME}/sysroots/${SYSROOT_NAME}" CACHE STRING "" FORCE)
 
 if(NOT IS_DIRECTORY "${CMAKE_SYSROOT}")
     message(FATAL_ERROR "CMAKE_SYSROOT directory does not exist: ${CMAKE_SYSROOT}")

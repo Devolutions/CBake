@@ -69,7 +69,7 @@ function Remove-ExcludedFiles() {
     }
 }
 
-function Optimize-Sysroot() {
+function Optimize-CBakeSysroot() {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true,Position=0)]
@@ -99,6 +99,26 @@ function Get-CbakePath() {
     }
 }
 
+function Import-CBakeSysroot {
+	param(
+		[Parameter(Mandatory=$true)]
+		[string] $Distro,
+        [Parameter(Mandatory=$true)]
+		[string] $Arch
+	)
+
+    $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
+
+    if (-Not (Test-Path $PackageFile)) {
+        throw "$PackageFile cannot be found!"
+    }
+
+    $SysrootsPath = Get-CbakePath "sysroots"
+    $SysrootPath = Join-Path $SysrootsPath "$distro-$arch"
+    Remove-Item -Path $SysrootPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
+    & 'tar' 'xf' $PackageFile '-C' $SysrootsPath
+}
+
 function New-CBakeSysroot {
 	param(
 		[Parameter(Mandatory=$true)]
@@ -120,7 +140,7 @@ function New-CBakeSysroot {
         '-o' "$distro-$arch"
 
     Write-Host "Optimizing $distro-arch sysroot"
-    Optimize-Sysroot $ExportPath
+    Optimize-CBakeSysroot $ExportPath
 
     Write-Host "Compressing $distro-$arch sysroot"
     $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
