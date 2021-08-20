@@ -150,13 +150,18 @@ function New-CBakeSysroot {
 		[Parameter(Mandatory=$true)]
 		[string] $Distro,
         [Parameter(Mandatory=$true)]
-		[string] $Arch
+		[string] $Arch,
+        [string] $ExportPath,
+        [switch] $SkipPackaging
 	)
 
     Push-Location
     $ImageName = "$distro-sysroot"
     Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
-    $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
+
+    if ([string]::IsNullOrEmpty($ExportPath)) {
+        $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
+    }
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
     Write-Host "Building $distro-$arch container"
@@ -168,9 +173,11 @@ function New-CBakeSysroot {
     Write-Host "Optimizing $distro-arch sysroot"
     Optimize-CBakeSysroot $ExportPath
 
-    Write-Host "Compressing $distro-$arch sysroot"
-    $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
-    Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
-    & 'tar' 'cfJ' $PackageFile "$distro-$arch"
-    Pop-Location
+    if (-Not $SkipPackaging) {
+        Write-Host "Compressing $distro-$arch sysroot"
+        $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
+        Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
+        & 'tar' 'cfJ' $PackageFile "$distro-$arch"
+        Pop-Location
+    }
 }
