@@ -78,6 +78,9 @@ function Optimize-CBakeSysroot() {
 
     Convert-SymbolicLinks $RootPath
     Remove-ExcludedFiles $RootPath
+
+    # remove dead symbolic links again
+    Convert-SymbolicLinks $RootPath
 }
 
 function Get-CbakePath() {
