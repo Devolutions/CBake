@@ -168,9 +168,9 @@ function New-CBakeSysroot {
     & 'docker' 'buildx' 'build' '.' `
         '-t' $ImageName `
         '--platform' "linux/$arch" `
-        '-o' "$distro-$arch"
+        '-o' $ExportPath
 
-    Write-Host "Optimizing $distro-arch sysroot"
+    Write-Host "Optimizing $distro-$arch sysroot"
     Optimize-CBakeSysroot $ExportPath
 
     if (-Not $SkipPackaging) {
