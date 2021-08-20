@@ -90,12 +90,38 @@ function Get-CbakePath() {
 
     $CBakeHome = $PSScriptRoot
 
+    if (Test-Path Env:CBAKE_HOME) {
+        $CbakeHome = $Env:CBAKE_HOME
+    }
+
     switch ($PathName) {
-        "home" { $CBakeHome }
-        "cmake" { Join-Path $CBakeHome "cmake" }
-        "sysroots" { Join-Path $CBakeHome "sysroots" }
-        "packages" { Join-Path $CBakeHome "packages" }
-        "recipes" { Join-Path $CBakeHome "recipes" }
+        "home" {
+            $CBakeHome
+        } "cmake" {
+            if (Test-Path Env:CBAKE_CMAKE_DIR) {
+                $Env:CBAKE_CMAKE_DIR
+            } else {
+                Join-Path $CBakeHome "cmake"
+            }
+        } "sysroots" {
+            if (Test-Path Env:CBAKE_SYSROOTS_DIR) {
+                $Env:CBAKE_SYSROOTS_DIR
+            } else {
+                Join-Path $CBakeHome "sysroots"
+            }
+        } "packages" {
+            if (Test-Path Env:CBAKE_PACKAGES_DIR) {
+                $Env:CBAKE_PACKAGES_DIR
+            } else {
+                Join-Path $CBakeHome "packages"
+            }
+        } "recipes" {
+            if (Test-Path Env:CBAKE_RECIPES_DIR) {
+                $Env:CBAKE_RECIPES_DIR
+            } else {
+                Join-Path $CBakeHome "recipes"
+            }
+        }
     }
 }
 
