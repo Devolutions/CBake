@@ -173,6 +173,10 @@ function New-CBakeSysroot {
         '--platform' "linux/$arch" `
         '-o' $ExportPath
 
+    if ($LASTEXITCODE -ne 0) {
+        throw "Error building $ImageName container image"
+    }
+
     Write-Host "Optimizing $distro-$arch sysroot"
     Optimize-CBakeSysroot $ExportPath
 
