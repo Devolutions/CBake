@@ -18,4 +18,6 @@ RUN apt-get install -y \
     libglib2.0-dev \
     libappindicator-dev \
     libappindicator3-dev \
-    libnotify-dev
+    libnotify-dev \
+    libcups2-dev \
+    libusb-1.0-0-dev
