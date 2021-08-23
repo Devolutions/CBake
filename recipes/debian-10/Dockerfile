@@ -2,7 +2,9 @@ FROM debian:buster-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN sed -i 's/deb.debian.com/debian.mirrors.ovh.net/g' /etc/apt/sources.list
 RUN apt-get update -y
+
 RUN apt-get install -y \
     gcc \
     libssl-dev \
