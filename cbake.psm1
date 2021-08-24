@@ -2,7 +2,7 @@
 function Convert-SymbolicLinks() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
@@ -28,7 +28,7 @@ function Convert-SymbolicLinks() {
 function Remove-ExcludedFiles() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
@@ -72,40 +72,69 @@ function Remove-ExcludedFiles() {
 function Optimize-CBakeSysroot() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
     Convert-SymbolicLinks $RootPath
     Remove-ExcludedFiles $RootPath
+
+    # remove dead symbolic links again
+    Convert-SymbolicLinks $RootPath
 }
 
 function Get-CbakePath() {
     [CmdletBinding()]
-	param(
-        [Parameter(Position=0)]
-        [ValidateSet("home","cmake","sysroots","packages","recipes")]
+    param(
+        [Parameter(Position = 0)]
+        [ValidateSet("home", "cmake", "sysroots", "packages", "recipes")]
         [string] $PathName = "home"
     )
 
     $CBakeHome = $PSScriptRoot
 
+    if (Test-Path Env:CBAKE_HOME) {
+        $CbakeHome = $Env:CBAKE_HOME
+    }
+
     switch ($PathName) {
-        "home" { $CBakeHome }
-        "cmake" { Join-Path $CBakeHome "cmake" }
-        "sysroots" { Join-Path $CBakeHome "sysroots" }
-        "packages" { Join-Path $CBakeHome "packages" }
-        "recipes" { Join-Path $CBakeHome "recipes" }
+        "home" {
+            $CBakeHome
+        } "cmake" {
+            if (Test-Path Env:CBAKE_CMAKE_DIR) {
+                $Env:CBAKE_CMAKE_DIR
+            } else {
+                Join-Path $CBakeHome "cmake"
+            }
+        } "sysroots" {
+            if (Test-Path Env:CBAKE_SYSROOTS_DIR) {
+                $Env:CBAKE_SYSROOTS_DIR
+            } else {
+                Join-Path $CBakeHome "sysroots"
+            }
+        } "packages" {
+            if (Test-Path Env:CBAKE_PACKAGES_DIR) {
+                $Env:CBAKE_PACKAGES_DIR
+            } else {
+                Join-Path $CBakeHome "packages"
+            }
+        } "recipes" {
+            if (Test-Path Env:CBAKE_RECIPES_DIR) {
+                $Env:CBAKE_RECIPES_DIR
+            } else {
+                Join-Path $CBakeHome "recipes"
+            }
+        }
     }
 }
 
 function Import-CBakeSysroot {
-	param(
-		[Parameter(Mandatory=$true)]
-		[string] $Distro,
-        [Parameter(Mandatory=$true)]
-		[string] $Arch
-	)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Distro,
+        [Parameter(Mandatory = $true)]
+        [string] $Arch
+    )
 
     $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
 
@@ -120,31 +149,42 @@ function Import-CBakeSysroot {
 }
 
 function New-CBakeSysroot {
-	param(
-		[Parameter(Mandatory=$true)]
-		[string] $Distro,
-        [Parameter(Mandatory=$true)]
-		[string] $Arch
-	)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Distro,
+        [Parameter(Mandatory = $true)]
+        [string] $Arch,
+        [string] $ExportPath,
+        [switch] $SkipPackaging
+    )
 
     Push-Location
     $ImageName = "$distro-sysroot"
     Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
-    $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
+
+    if ([string]::IsNullOrEmpty($ExportPath)) {
+        $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
+    }
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
     Write-Host "Building $distro-$arch container"
-    & 'docker' 'buildx' 'build' '.' `
-        '-t' $ImageName `
-        '--platform' "linux/$arch" `
-        '-o' "$distro-$arch"
 
-    Write-Host "Optimizing $distro-arch sysroot"
+    $params = @('buildx',
+        'build', '.',
+        '-t', $ImageName,
+        '--platform', "linux/$arch",
+        '-o', "`"type=local,dest=$ExportPath`"")
+    Write-Host "docker $($params -Join ' ')"
+    Start-Process -FilePath 'docker' -ArgumentList $Params -Wait
+
+    Write-Host "Optimizing $distro-$arch sysroot"
     Optimize-CBakeSysroot $ExportPath
 
-    Write-Host "Compressing $distro-$arch sysroot"
-    $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
-    Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
-    & 'tar' 'cfJ' $PackageFile "$distro-$arch"
-    Pop-Location
+    if (-Not $SkipPackaging) {
+        Write-Host "Compressing $distro-$arch sysroot"
+        $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
+        Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
+        & 'tar' 'cfJ' $PackageFile "$distro-$arch"
+        Pop-Location
+    }
 }

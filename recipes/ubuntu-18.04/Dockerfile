@@ -2,9 +2,11 @@ FROM ubuntu:18.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+RUN sed -i 's/archive.ubuntu.com/ubuntu.mirrors.ovh.net/g' /etc/apt/sources.list
 RUN apt-get update -y
+
 RUN apt-get install -y \
-    libgcc1 \
+    gcc \
     libssl-dev \
     libpam-dev \
     libffi-dev \
@@ -18,4 +20,6 @@ RUN apt-get install -y \
     libglib2.0-dev \
     libappindicator-dev \
     libappindicator3-dev \
-    libnotify-dev
+    libnotify-dev \
+    libcups2-dev \
+    libusb-1.0-0-dev
