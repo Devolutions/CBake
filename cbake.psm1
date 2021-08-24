@@ -2,7 +2,7 @@
 function Convert-SymbolicLinks() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
@@ -28,7 +28,7 @@ function Convert-SymbolicLinks() {
 function Remove-ExcludedFiles() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
@@ -72,7 +72,7 @@ function Remove-ExcludedFiles() {
 function Optimize-CBakeSysroot() {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true,Position=0)]
+        [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
 
@@ -85,9 +85,9 @@ function Optimize-CBakeSysroot() {
 
 function Get-CbakePath() {
     [CmdletBinding()]
-	param(
-        [Parameter(Position=0)]
-        [ValidateSet("home","cmake","sysroots","packages","recipes")]
+    param(
+        [Parameter(Position = 0)]
+        [ValidateSet("home", "cmake", "sysroots", "packages", "recipes")]
         [string] $PathName = "home"
     )
 
@@ -129,12 +129,12 @@ function Get-CbakePath() {
 }
 
 function Import-CBakeSysroot {
-	param(
-		[Parameter(Mandatory=$true)]
-		[string] $Distro,
-        [Parameter(Mandatory=$true)]
-		[string] $Arch
-	)
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Distro,
+        [Parameter(Mandatory = $true)]
+        [string] $Arch
+    )
 
     $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
 
@@ -149,14 +149,14 @@ function Import-CBakeSysroot {
 }
 
 function New-CBakeSysroot {
-	param(
-		[Parameter(Mandatory=$true)]
-		[string] $Distro,
-        [Parameter(Mandatory=$true)]
-		[string] $Arch,
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Distro,
+        [Parameter(Mandatory = $true)]
+        [string] $Arch,
         [string] $ExportPath,
         [switch] $SkipPackaging
-	)
+    )
 
     Push-Location
     $ImageName = "$distro-sysroot"
@@ -168,14 +168,14 @@ function New-CBakeSysroot {
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
     Write-Host "Building $distro-$arch container"
-    & 'docker' 'buildx' 'build' '.' `
-        '-t' $ImageName `
-        '--platform' "linux/$arch" `
-        '-o' $ExportPath
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Error building $ImageName container image"
-    }
+    $params = @('buildx',
+        'build', '.',
+        '-t', $ImageName,
+        '--platform', "linux/$arch",
+        '-o', "`"type=local,dest=$ExportPath`"")
+    Write-Host "docker $($params -Join ' ')"
+    Start-Process -FilePath 'docker' -ArgumentList $Params -Wait
 
     Write-Host "Optimizing $distro-$arch sysroot"
     Optimize-CBakeSysroot $ExportPath
