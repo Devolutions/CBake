@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ amd64, arm64 ]
-        distro: [ ubuntu-18.04, alpine-3.14 ]
+        distro: [ ubuntu-18.04, debian-10, alpine-3.14, opensuse-15.2 ]
 
         include:
           - os: linux
@@ -32,11 +32,10 @@ jobs:
 
       - name: Build cbake sysroot
         run: |
-          cd ./recipes/${{matrix.distro}}
-          docker buildx build . \
-            -t ${{matrix.distro}}-${{matrix.arch}}-sysroot \
-            --platform linux/${{matrix.arch}} \
-            -o "type=tar,dest=${{matrix.distro}}-${{matrix.arch}}.tar"
-          mkdir "${{matrix.distro}}-${{matrix.arch}}"
-          tar -xf "${{matrix.distro}}-${{matrix.arch}}.tar" -C "${{matrix.distro}}-${{matrix.arch}}"
-          ls -Rl "${{matrix.distro}}-${{matrix.arch}}"
+          pwsh build.ps1 -Distro ${{matrix.distro}} -Arch ${{matrix.arch}}
+
+      - name: Upload cbake sysroot
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{matrix.distro}}-${{matrix.arch}}-sysroot
+          path: packages/${{matrix.distro}}-${{matrix.arch}}-sysroot.tar.xz
