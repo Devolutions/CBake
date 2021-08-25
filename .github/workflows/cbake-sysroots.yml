@@ -38,5 +38,5 @@ jobs:
             --platform linux/${{matrix.arch}} \
             -o "type=tar,dest=${{matrix.distro}}-${{matrix.arch}}.tar"
           mkdir "${{matrix.distro}}-${{matrix.arch}}"
-          tar -xf "${{matrix.distro}}-${{matrix.arch}}.tar" "${{matrix.distro}}-${{matrix.arch}}"
+          tar -xf "${{matrix.distro}}-${{matrix.arch}}.tar" -C "${{matrix.distro}}-${{matrix.arch}}"
           ls -Rl "${{matrix.distro}}-${{matrix.arch}}"
