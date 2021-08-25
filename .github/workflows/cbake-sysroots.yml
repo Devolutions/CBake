@@ -27,7 +27,7 @@ jobs:
       - name: Configure Linux runner
         run: |
           sudo apt update
-          sudo apt install ninja-build cmke xz-utils
+          sudo apt install ninja-build cmake xz-utils
           bash <(wget -qO - https://aka.ms/install-powershell.sh)
 
       - name: Build cbake sysroot
