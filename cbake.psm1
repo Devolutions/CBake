@@ -151,8 +151,10 @@ function Import-CBakeSysroot {
 function New-CBakeSysroot {
     param(
         [Parameter(Mandatory = $true)]
+        [Alias("Distribution")]
         [string] $Distro,
         [Parameter(Mandatory = $true)]
+        [Alias("Architecture")]
         [string] $Arch,
         [string] $ExportPath,
         [switch] $SkipPackaging

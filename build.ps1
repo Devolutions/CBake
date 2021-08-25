@@ -1,5 +1,9 @@
 #!/usr/bin/env pwsh
 
+if (-Not (Test-Path Env:CBAKE_HOME)) {
+    $Env:CBAKE_HOME = $PSScriptRoot
+}
+
 Import-Module "$Env:CBAKE_HOME/cbake.psm1" -Force
 
 $CmdVerbs = @('sysroot')
