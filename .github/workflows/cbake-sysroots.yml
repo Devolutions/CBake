@@ -32,7 +32,7 @@ jobs:
 
       - name: Build cbake sysroot
         run: |
-          pwsh build.ps1 -Distro ${{matrix.distro}} -Arch ${{matrix.arch}}
+          pwsh build.ps1 sysroot -Distro ${{matrix.distro}} -Arch ${{matrix.arch}}
 
       - name: Upload cbake sysroot
         uses: actions/upload-artifact@v2
