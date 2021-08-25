@@ -32,7 +32,7 @@ jobs:
 
       - name: Build cbake sysroot
         run: |
-          cd ./recipes/${{matrix.distro}}-${{matrix.arch}}
+          cd ./recipes/${{matrix.distro}}
           docker buildx build . \
             -t ${{matrix.distro}}-${{matrix.arch}}-sysroot \
             --platform linux/${{matrix.arch}} \
