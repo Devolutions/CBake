@@ -1,5 +1,5 @@
 
-function Convert-SymbolicLinks() {
+function Convert-CBakeSymbolicLinks() {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -25,7 +25,7 @@ function Convert-SymbolicLinks() {
     }
 }
 
-function Remove-ExcludedFiles() {
+function Remove-CBakeExcludedFiles() {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true, Position = 0)]
@@ -76,11 +76,11 @@ function Optimize-CBakeSysroot() {
         [string] $RootPath
     )
 
-    Convert-SymbolicLinks $RootPath
-    Remove-ExcludedFiles $RootPath
+    Convert-CBakeSymbolicLinks $RootPath
+    Remove-CBakeExcludedFiles $RootPath
 
     # remove dead symbolic links again
-    Convert-SymbolicLinks $RootPath
+    Convert-CBakeSymbolicLinks $RootPath
 }
 
 function Get-CbakePath() {
@@ -151,15 +151,16 @@ function Import-CBakeSysroot {
 function New-CBakeSysroot {
     param(
         [Parameter(Mandatory = $true)]
+        [Alias("Distribution")]
         [string] $Distro,
         [Parameter(Mandatory = $true)]
+        [Alias("Architecture")]
         [string] $Arch,
         [string] $ExportPath,
         [switch] $SkipPackaging
     )
 
     Push-Location
-    $ImageName = "$distro-sysroot"
     Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
 
     if ([string]::IsNullOrEmpty($ExportPath)) {
@@ -168,14 +169,18 @@ function New-CBakeSysroot {
     Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
     Write-Host "Building $distro-$arch container"
+    Remove-Item -Path "$distro-$arch.tar" -ErrorAction 'SilentlyContinue' | Out-Null
 
     $params = @('buildx',
         'build', '.',
-        '-t', $ImageName,
+        '-t', "$distro-$arch-sysroot",
         '--platform', "linux/$arch",
-        '-o', "`"type=local,dest=$ExportPath`"")
+        '-o', "`"type=tar,dest=$distro-$arch.tar`"")
     Write-Host "docker $($params -Join ' ')"
     Start-Process -FilePath 'docker' -ArgumentList $Params -Wait
+    New-Item -Path $ExportPath -ItemType Directory -ErrorAction 'SilentlyContinue' | Out-Null
+    & 'tar' '-xf' "$distro-$arch.tar" '-C' "$ExportPath"
+    Remove-Item -Path "$distro-$arch.tar" -ErrorAction 'SilentlyContinue' | Out-Null
 
     Write-Host "Optimizing $distro-$arch sysroot"
     Optimize-CBakeSysroot $ExportPath
