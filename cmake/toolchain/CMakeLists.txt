@@ -1,0 +1,86 @@
+cmake_minimum_required(VERSION 3.0)
+
+project(cbake-toolchain C CXX)
+
+if(CMAKE_HOST_WIN32)
+	set(USER_HOME "$ENV{USERPROFILE}")
+else()
+	set(USER_HOME "$ENV{HOME}")
+endif()
+
+if(NOT DEFINED CARGO_HOME)
+	if("$ENV{CARGO_HOME}" STREQUAL "")
+		set(CARGO_HOME "${USER_HOME}/.cargo")
+	else()
+		set(CARGO_HOME "$ENV{CARGO_HOME}")
+	endif()
+endif()
+
+set(CARGO_CBAKE_DIR "${CARGO_HOME}/cbake")
+file(MAKE_DIRECTORY "${CARGO_CBAKE_DIR}")
+
+string(REGEX REPLACE "^([0-9a-zA-Z]+)-(.*)" "\\1" CARGO_TARGET_ARCH "${CMAKE_C_COMPILER_TARGET}")
+set(CARGO_TARGET "${CARGO_TARGET_ARCH}-unknown-linux-gnu")
+
+function(cargo_config_key_env INPUT_VALUE OUTPUT_VARIABLE)
+    set(CARGO_CONFIG_KEY_ENV_NAME "CARGO_${INPUT_VALUE}")
+    string(TOUPPER ${CARGO_CONFIG_KEY_ENV_NAME} CARGO_CONFIG_KEY_ENV_NAME)
+    string(REGEX REPLACE "[.|-]" "_" CARGO_CONFIG_KEY_ENV_NAME ${CARGO_CONFIG_KEY_ENV_NAME})
+    set(${OUTPUT_VARIABLE} "${CARGO_CONFIG_KEY_ENV_NAME}" PARENT_SCOPE)
+endfunction()
+
+cargo_config_key_env("target.${CARGO_TARGET}.linker" CARGO_TARGET_LINKER_ENV_NAME)
+set(${CARGO_TARGET_LINKER_ENV_NAME} "${CARGO_CBAKE_DIR}/${CARGO_TARGET}-linker")
+
+set(CARGO_LINKER_SCRIPT "#!/bin/sh
+\"${CMAKE_C_COMPILER}\" \\
+--target=${CMAKE_C_COMPILER_TARGET} \\
+--sysroot=\"${CMAKE_SYSROOT}\" \\
+${CMAKE_STATIC_LINKER_FLAGS} \\
+\"$@\"
+")
+
+file(WRITE "${${CARGO_TARGET_LINKER_ENV_NAME}}" "${CARGO_LINKER_SCRIPT}")
+execute_process(COMMAND "chmod" "+x" "${${CARGO_TARGET_LINKER_ENV_NAME}}")
+
+set(CC "${CMAKE_C_COMPILER}")
+set(CFLAGS "--sysroot=\"${CMAKE_SYSROOT}\" ${CMAKE_C_FLAGS}")
+set(CXXFLAGS "--sysroot=\"${CMAKE_SYSROOT}\" ${CMAKE_CXX_FLAGS}")
+
+set(ENV_VARS
+    "PKG_CONFIG_DIR"
+    "PKG_CONFIG_LIBDIR"
+    "PKG_CONFIG_SYSROOT_DIR")
+
+list(APPEND ENV_VARS
+    "CC"
+    "CFLAGS"
+    "CXXFLAGS")
+
+list(APPEND ENV_VARS
+    "${CARGO_TARGET_LINKER_ENV_NAME}")
+
+set(DOTENV_FILE "")
+foreach(ENV_VAR ${ENV_VARS})
+    list(APPEND DOTENV_FILE "${ENV_VAR}=${${ENV_VAR}}")
+endforeach()
+list(APPEND DOTENV_FILE "")
+list(JOIN DOTENV_FILE "\n" DOTENV_FILE)
+
+set(ENTER_ENV_SH "")
+foreach(ENV_VAR ${ENV_VARS})
+    list(APPEND ENTER_ENV_SH "export ${ENV_VAR}=\"${${ENV_VAR}}\"")
+endforeach()
+list(APPEND ENTER_ENV_SH "")
+list(JOIN ENTER_ENV_SH "\n" ENTER_ENV_SH)
+
+set(LEAVE_ENV_SH "")
+foreach(ENV_VAR ${ENV_VARS})
+    list(APPEND LEAVE_ENV_SH "unset ${ENV_VAR}")
+endforeach()
+list(APPEND LEAVE_ENV_SH "")
+list(JOIN LEAVE_ENV_SH "\n" LEAVE_ENV_SH)
+
+file(WRITE "${CARGO_CBAKE_DIR}/${CARGO_TARGET}.env" "${DOTENV_FILE}")
+file(WRITE "${CARGO_CBAKE_DIR}/${CARGO_TARGET}-enter.sh" "${ENTER_ENV_SH}")
+file(WRITE "${CARGO_CBAKE_DIR}/${CARGO_TARGET}-leave.sh" "${LEAVE_ENV_SH}")
