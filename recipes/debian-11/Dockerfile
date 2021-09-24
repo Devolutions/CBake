@@ -9,6 +9,7 @@ RUN apt-get install -y \
     gcc \
     libssl-dev \
     libpam-dev \
+    libkrb5-dev \
     libffi-dev \
     libsystemd-dev \
     libx11-dev \
