@@ -2,6 +2,20 @@
 set(WIN32 TRUE)
 set(MSVC TRUE)
 
+init_toolchain_property(HOST_ARCH)
+init_toolchain_property(TARGET_ARCH)
+
+if(NOT HOST_ARCH)
+    set(HOST_ARCH "x64" CACHE STRING "" FORCE)
+endif()
+
+message(STATUS "HOST_ARCH: ${HOST_ARCH}")
+message(STATUS "TARGET_ARCH: ${TARGET_ARCH}")
+
+if(NOT DEFINED TARGET_ARCH)
+    message(FATAL_ERROR "TARGET_ARCH not defined!")
+endif()
+
 set(PROGRAM_FILES_X86_STR "PROGRAMFILES(X86)")
 file(TO_CMAKE_PATH "$ENV{${PROGRAM_FILES_X86_STR}}" PROGRAM_FILES_X86)
 
@@ -20,15 +34,24 @@ file(TO_CMAKE_PATH "${VSINSTALLDIR}" VSINSTALLDIR)
 string(APPEND VSINSTALLDIR "/")
 
 # Detect VCINSTALLDIR ("C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC")
-set(VCINSTALLDIR "${VSINSTALLDIR}VC/")
+set(VCINSTALLDIR "${VSINSTALLDIR}VC/" CACHE STRING "" FORCE)
+
+if(NOT EXISTS "${VCINSTALLDIR}")
+    message(FATAL_ERROR "VCINSTALLDIR could not be found: ${VCINSTALLDIR}")
+endif()
 
 # Detect VCToolsVersion, VCToolsInstallDir
 # https://github.com/microsoft/vswhere/wiki/Find-VC
 
 file(READ "${VCINSTALLDIR}/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt" VCToolsVersion)
 string(STRIP "${VCToolsVersion}" VCToolsVersion)
-set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/")
-set(VCToolsPath "${VCToolsInstallDir}bin/Host${HOST_ARCH}/${TARGET_ARCH}/")
+set(VCToolsVersion "${VCToolsVersion}" CACHE STRING "" FORCE)
+set(VCToolsInstallDir "${VCINSTALLDIR}Tools/MSVC/${VCToolsVersion}/" CACHE STRING "" FORCE)
+set(VCToolsPath "${VCToolsInstallDir}bin/Host${HOST_ARCH}/${TARGET_ARCH}/" CACHE STRING "" FORCE)
+
+if(NOT EXISTS "${VCToolsPath}")
+    message(FATAL_ERROR "VCToolsPath could not be found: ${VCToolsPath}")
+endif()
 
 message(STATUS "VCToolsVersion: ${VCToolsVersion}")
 message(STATUS "VCINSTALLDIR: ${VCINSTALLDIR}")
@@ -48,10 +71,10 @@ foreach(WINSDKVER_HEADER ${WINSDKVER_HEADERS})
 	set(WINSDK_VERSION ${CMAKE_MATCH_1})
 endforeach()
 
-set(WindowsSdkVersion "${WINSDK_VERSION}/")
-set(WindowsSdkLibVersion "${WINSDK_VERSION}/")
-set(WindowsSdkVerBinPath "${WindowsSdkDir}bin/${WindowsSdkVersion}")
-set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${HOST_ARCH}/")
+set(WindowsSdkVersion "${WINSDK_VERSION}/" CACHE STRING "" FORCE)
+set(WindowsSdkLibVersion "${WINSDK_VERSION}/" CACHE STRING "" FORCE)
+set(WindowsSdkVerBinPath "${WindowsSdkDir}bin/${WindowsSdkVersion}" CACHE STRING "" FORCE)
+set(WindowsSdkToolsPath "${WindowsSdkVerBinPath}${HOST_ARCH}/" CACHE STRING "" FORCE)
 
 message(STATUS "WindowsSdkVersion: ${WINSDK_VERSION}")
 message(STATUS "WindowsSdkDir: ${WindowsSdkDir}")
@@ -76,16 +99,14 @@ set(LIB
 	"${VCToolsInstallDir}lib/${TARGET_ARCH}"
 	"${NETFXSDKDir}lib/um/${TARGET_ARCH}"
 	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}ucrt/${TARGET_ARCH}"
-	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}um/${TARGET_ARCH}"
-	)
+	"${WindowsSdkDir}lib/${WindowsSdkLibVersion}um/${TARGET_ARCH}")
 
 set(LIBPATH
 	"${VCToolsInstallDir}ATLMFC/lib/${TARGET_ARCH}"
 	"${VCToolsInstallDir}lib/${TARGET_ARCH}"
 	"${VCToolsInstallDir}lib/${TARGET_ARCH}/x86/store/references"
 	"${WindowsSdkDir}UnionMetadata/${WindowsSdkLibVersion}"
-	"${WindowsSdkDir}References/${WindowsSdkLibVersion}"
-	)
+	"${WindowsSdkDir}References/${WindowsSdkLibVersion}")
 
 set(INCLUDE
 	"${VCToolsInstallDir}ATLMFC/include"
@@ -95,8 +116,7 @@ set(INCLUDE
 	"${WindowsSdkDir}include/${WindowsSdkLibVersion}shared"
 	"${WindowsSdkDir}include/${WindowsSdkLibVersion}um"
 	"${WindowsSdkDir}include/${WindowsSdkLibVersion}winrt"
-	"${WindowsSdkDir}include/${WindowsSdkLibVersion}cppwinrt"
-	)
+	"${WindowsSdkDir}include/${WindowsSdkLibVersion}cppwinrt")
 
 set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES ${INCLUDE})
 set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${INCLUDE})
