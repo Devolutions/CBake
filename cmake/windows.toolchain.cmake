@@ -13,7 +13,7 @@ function(init_toolchain_property property)
 endfunction()
 
 if(CMAKE_HOST_WIN32)
-    include("${CMAKE_CURRENT_LIST_DIR}/windows-msvc.toolchain.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/windows-msvc.cmake")
 else()
     include("${CMAKE_CURRENT_LIST_DIR}/clang-cl-msvc.cmake")
 endif()
