@@ -8,11 +8,11 @@ function Convert-CBakeSymbolicLinks() {
 
     $ReparsePoints = Get-ChildItem $RootPath -Recurse | `
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
-    $AbsSymlinks = $ReparsePoints | Where-Object { $_.Target -NotLike "$RootPath/*" }
+    $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
-        $Target = Join-Path $RootPath $_.Target
-        if (Test-Path $Target) {
+        $Target = Join-Path $RootPath $_.LinkTarget
+        if (Test-Path $Target -ErrorAction SilentlyContinue) {
             Push-Location
             Set-Location $_.Directory
             $Target = Resolve-Path -Path $Target -Relative
