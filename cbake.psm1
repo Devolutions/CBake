@@ -8,10 +8,10 @@ function Convert-CBakeSymbolicLinks() {
 
     $ReparsePoints = Get-ChildItem $RootPath -Recurse | `
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
-    $AbsSymlinks = $ReparsePoints | Where-Object { $_.Target -NotLike "$RootPath/*" }
+    $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
-        $Target = Join-Path $RootPath $_.Target
+        $Target = Join-Path $RootPath $_.LinkTarget
         if (Test-Path $Target) {
             Push-Location
             Set-Location $_.Directory
@@ -20,6 +20,24 @@ function Convert-CBakeSymbolicLinks() {
             New-Item -ItemType SymbolicLink -Path $Source -Target $Target | Out-Null
             Pop-Location
         } else {
+            Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
+        }
+    }
+}
+
+function Remove-CBakeSymbolicLinks() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $RootPath
+    )
+
+    $ReparsePoints = Get-ChildItem $RootPath -Recurse | `
+        Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
+    $ReparsePoints | ForEach-Object {
+        $Source = $_.FullName
+        $Target = $_.ResolveLinkTarget($true).FullName
+        if (-Not (Test-Path $Target)) {
             Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
         }
     }
@@ -79,8 +97,8 @@ function Optimize-CBakeSysroot() {
     Convert-CBakeSymbolicLinks $RootPath
     Remove-CBakeExcludedFiles $RootPath
 
-    # remove dead symbolic links again
-    Convert-CBakeSymbolicLinks $RootPath
+    # remove dead symbolic links
+    Remove-CBakeSymbolicLinks $RootPath
 }
 
 function Get-CbakePath() {
