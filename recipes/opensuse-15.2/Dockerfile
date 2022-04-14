@@ -26,4 +26,5 @@ RUN zypper install -y \
     pcsc-lite-devel \
     gstreamer-devel \
     gstreamer-plugins-base-devel \
-    cups-devel
+    cups-devel \
+    libudev-devel
