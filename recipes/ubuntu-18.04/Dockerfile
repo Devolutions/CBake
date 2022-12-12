@@ -24,4 +24,5 @@ RUN apt-get install -y \
     libnotify-dev \
     libcups2-dev \
     libusb-1.0-0-dev \
-    libudev-dev
+    libudev-dev \
+    libsdl2-dev
