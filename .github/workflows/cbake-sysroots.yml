@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ amd64, arm64 ]
-        distro: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, debian-10, debian-11, alpine-3.17, fedora-37, opensuse-15.4 ]
+        distro: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, debian-10, debian-11, rhel8, rhel9, alpine-3.17, fedora-37, opensuse-15.4 ]
 
         include:
           - os: linux
