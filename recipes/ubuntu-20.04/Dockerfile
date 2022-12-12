@@ -25,4 +25,5 @@ RUN apt-get install -y \
     libcups2-dev \
     libusb-1.0-0-dev \
     libudev-dev \
-    libsdl2-dev
+    libsdl2-dev \
+    libsdl2-ttf-dev
