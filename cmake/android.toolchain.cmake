@@ -501,13 +501,13 @@ list(APPEND ANDROID_LINKER_FLAGS "--sysroot ${ANDROID_SYSTEM_LIBRARY_PATH}")
 # CMAKE_SYSROOT. Set up CMAKE_SYSTEM_LIBRARY_PATH
 # (https://cmake.org/cmake/help/v3.6/variable/CMAKE_SYSTEM_LIBRARY_PATH.html)
 # instead.
-#
-# NB: The suffix is just lib here instead of dealing with lib64 because
-# apparently CMake does some automatic rewriting of that? I've been testing by
-# building my own CMake with a bunch of logging added, and that seems to be the
-# case.
-list(APPEND CMAKE_SYSTEM_LIBRARY_PATH
-  "${ANDROID_SYSTEM_LIBRARY_PATH}/usr/lib")
+if(ANDROID_ABI STREQUAL x86_64)
+  list(APPEND CMAKE_SYSTEM_LIBRARY_PATH
+    "${ANDROID_SYSTEM_LIBRARY_PATH}/usr/lib64")
+else()
+  list(APPEND CMAKE_SYSTEM_LIBRARY_PATH
+    "${ANDROID_SYSTEM_LIBRARY_PATH}/usr/lib")
+endif()
 
 # Toolchain.
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL Linux)
