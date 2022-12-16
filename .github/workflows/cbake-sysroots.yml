@@ -8,21 +8,21 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ amd64, arm64 ]
-        distro: [ ubuntu-18.04, debian-10, alpine-3.14, opensuse-15.2 ]
+        distro: [ ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, debian-10, debian-11, rhel8, rhel9, alpine-3.17, fedora-37, opensuse-15.4 ]
 
         include:
           - os: linux
-            runner: ubuntu-18.04
+            runner: ubuntu-20.04
             
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Configure Linux runner
         run: |
@@ -35,7 +35,7 @@ jobs:
           pwsh build.ps1 sysroot -Distro ${{matrix.distro}} -Arch ${{matrix.arch}}
 
       - name: Upload cbake sysroot
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.distro}}-${{matrix.arch}}-sysroot
           path: packages/${{matrix.distro}}-${{matrix.arch}}-sysroot.tar.xz

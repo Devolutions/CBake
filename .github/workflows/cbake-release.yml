@@ -1,0 +1,66 @@
+name: cbake release
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'workflow run id'
+        default: "latest"
+        required: true
+      version:
+        description: 'release version'
+        default: "latest"
+        required: true
+
+jobs:
+  publish:
+    name: publish sysroots
+    runs-on: ubuntu-22.04
+    environment: publish
+    
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v3
+
+      - name: Download cbake sysroots
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $RunId = '${{ github.event.inputs.run_id }}'
+          if ($RunId -eq 'latest') {
+            $RunId = $(gh run list -w 'cbake sysroots' --json 'status,databaseId,conclusion') |
+              ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
+              Select-Object -First 1 -ExpandProperty databaseId
+          }
+          New-Item -Path "download" -ItemType Directory -Force | Out-Null
+          Write-Host "Downloading run $RunId"
+          & gh run download $RunId --dir "download"
+          Get-ChildItem "download/*/*.tar.xz" | ForEach-Object {
+            Move-Item $_.FullName $_.Directory.Parent
+            Remove-Item $_.Directory -ErrorAction SilentlyContinue
+          }
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
+        working-directory: download
+        run: |
+          $Version = '${{ github.event.inputs.version }}'
+          if ($Version -eq 'latest') {
+            $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
+          }
+
+          $HashPath = 'checksums'
+          $Files = Get-Item *.tar.xz | % { Get-FileHash -Algorithm SHA256 $_.FullName }
+          $Files | % { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } | Out-File -FilePath $HashPath -Append -Encoding ASCII
+
+          echo "::group::checksums"
+          Get-Content $HashPath
+          echo "::endgroup::"
+
+          $ReleaseTag = "v$Version"
+          $ReleaseTitle = "CBake v${Version}"
+          $Repository = $Env:GITHUB_REPOSITORY
+
+          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
