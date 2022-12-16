@@ -16,13 +16,13 @@ jobs:
             
     steps:
       - name: Check out ${{ github.repository }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up docker buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Configure Linux runner
         run: |
@@ -35,7 +35,7 @@ jobs:
           pwsh build.ps1 sysroot -Distro ${{matrix.distro}} -Arch ${{matrix.arch}}
 
       - name: Upload cbake sysroot
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{matrix.distro}}-${{matrix.arch}}-sysroot
           path: packages/${{matrix.distro}}-${{matrix.arch}}-sysroot.tar.xz
