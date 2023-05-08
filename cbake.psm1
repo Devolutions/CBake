@@ -71,7 +71,6 @@ function Remove-CBakeExcludedFiles() {
         '/usr/bin',
         '/usr/sbin',
         '/usr/games',
-        '/usr/share',
         '/usr/src',
         '/usr/libexec',
         '/usr/local/bin',
@@ -85,6 +84,8 @@ function Remove-CBakeExcludedFiles() {
         $exclude_dir = Join-Path $ExportPath $exclude_dir
         Remove-Item -Path $exclude_dir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
+
+    Get-ChildItem -Path "/usr/share" -Exclude "pkgconfig" | foreach ($_) { Remove-Item $_.FullName -Force -Recurse -ErrorAction 'SilentlyContinue' } | Out-Null
 }
 
 function Optimize-CBakeSysroot() {

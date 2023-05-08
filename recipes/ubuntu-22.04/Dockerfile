@@ -26,4 +26,6 @@ RUN apt-get install -y \
     libusb-1.0-0-dev \
     libudev-dev \
     libsdl2-dev \
-    libsdl2-ttf-dev
+    libsdl2-ttf-dev \
+    libwebkit2gtk-4.0-dev \
+    libvte-2.91-dev
