@@ -16,7 +16,7 @@ jobs:
     name: publish sysroots
     runs-on: ubuntu-22.04
     environment: publish
-    
+
     steps:
       - name: Clone project
         uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
       - name: Download cbake sysroots
         shell: pwsh
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
@@ -43,7 +43,7 @@ jobs:
       - name: Create GitHub release
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.DEVOLUTIONSBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: download
         run: |
           $Version = '${{ github.event.inputs.version }}'
