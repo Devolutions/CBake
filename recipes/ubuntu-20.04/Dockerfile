@@ -27,5 +27,6 @@ RUN apt-get install -y \
     libudev-dev \
     libsdl2-dev \
     libsdl2-ttf-dev \
+    libsoup2.4-dev \
     libwebkit2gtk-4.0-dev \
     libvte-2.91-dev
