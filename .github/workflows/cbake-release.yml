@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Clone project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download cbake sysroots
         shell: pwsh
