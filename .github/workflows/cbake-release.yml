@@ -63,4 +63,4 @@ jobs:
           $ReleaseTitle = "CBake v${Version}"
           $Repository = $Env:GITHUB_REPOSITORY
 
-          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle --draft ./*
+          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle ./*
