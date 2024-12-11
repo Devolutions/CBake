@@ -6,15 +6,16 @@ function Convert-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse | `
+    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
     $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
+        $Directory = $_.Directory
         $Target = Join-Path $RootPath $_.LinkTarget
         if (Test-Path $Target) {
             Push-Location
-            Set-Location $_.Directory
+            Set-Location $Directory
             $Target = Resolve-Path -Path $Target -Relative
             Remove-Item $Source | Out-Null
             New-Item -ItemType SymbolicLink -Path $Source -Target $Target | Out-Null
@@ -32,7 +33,7 @@ function Remove-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse | `
+    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
     $ReparsePoints | ForEach-Object {
         $Source = $_.FullName
@@ -50,7 +51,7 @@ function Remove-CBakeExcludedFiles() {
         [string] $RootPath
     )
 
-    $exclude_dirs = @(
+    $ExcludeDirs = @(
         '/bin',
         '/boot',
         '/etc',
@@ -78,14 +79,17 @@ function Remove-CBakeExcludedFiles() {
         '/usr/local/games',
         '/usr/local/share',
         '/usr/local/src',
-        '/usr/local')
+        '/usr/local'
+    )
 
-    foreach ($exclude_dir in $exclude_dirs) {
-        $exclude_dir = Join-Path $ExportPath $exclude_dir
-        Remove-Item -Path $exclude_dir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
+    $ExcludeDirs | ForEach-Object {
+        $ExcludeDir = Join-Path $ExportPath $_
+        Remove-Item -Path $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
 
-    Get-ChildItem -Path "/usr/share" -Exclude "pkgconfig" | foreach ($_) { Remove-Item $_.FullName -Force -Recurse -ErrorAction 'SilentlyContinue' } | Out-Null
+    Get-ChildItem -Path "/usr/share" -Exclude "pkgconfig" | ForEach-Object {
+        Remove-Item $_.FullName -Force -Recurse -ErrorAction 'SilentlyContinue' | Out-Null
+    }
 }
 
 function Optimize-CBakeSysroot() {
