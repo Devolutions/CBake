@@ -30,7 +30,7 @@ The packaged sysroots are packaged in the "packages" directory, after which they
 Once you have built and imported a few sysroots, you can try cross-compiling the [Ninja build system](https://ninja-build.org/) executable to all targets using the provided Linux [CMake](https://cmake.org/) toolchain file. Clone the ninja sources and then move into the directory:
 
 ```bash
-git clone git://github.com/ninja-build/ninja.git
+git clone https://github.com/ninja-build/ninja.git
 cd "ninja"
 ```
 
