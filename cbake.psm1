@@ -86,10 +86,6 @@ function Remove-CBakeExcludedFiles() {
         $ExcludeDir = Join-Path $ExportPath $_
         Remove-Item -Path $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
-
-    Get-ChildItem -Path "/usr/share" -Exclude "pkgconfig" | ForEach-Object {
-        Remove-Item $_.FullName -Force -Recurse -ErrorAction 'SilentlyContinue' | Out-Null
-    }
 }
 
 function Optimize-CBakeSysroot() {
