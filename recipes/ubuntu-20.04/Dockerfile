@@ -7,6 +7,7 @@ RUN apt-get update -y
 
 RUN apt-get install --no-install-recommends -y \
     gcc \
+    g++ \
     libssl-dev \
     libpam-dev \
     libkrb5-dev \
