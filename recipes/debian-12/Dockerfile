@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -y
 
-RUN apt-get install -y \
+RUN apt-get install --no-install-recommends -y \
     gcc \
     libssl-dev \
     libpam-dev \
