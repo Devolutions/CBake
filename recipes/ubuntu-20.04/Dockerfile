@@ -5,7 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN sed -i 's/archive.ubuntu.com/ubuntu.mirrors.ovh.net/g' /etc/apt/sources.list
 RUN apt-get update -y
 
-RUN apt-get install -y \
+RUN apt-get install -y --no-install-recommends \
     gcc \
     libssl-dev \
     libpam-dev \
