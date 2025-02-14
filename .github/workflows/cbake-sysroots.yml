@@ -23,7 +23,7 @@ jobs:
 
         include:
           - os: linux
-            runner: ubuntu-20.04
+            runner: ubuntu-22.04
             
     steps:
       - name: Check out ${{ github.repository }}

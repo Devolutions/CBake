@@ -14,7 +14,7 @@ on:
 jobs:
   publish:
     name: publish sysroots
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     environment: publish
 
     steps:
