@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+ENV PYTHONDONTWRITEBYTECODE=1
+
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN sed -i 's/archive.ubuntu.com/ubuntu.mirrors.ovh.net/g' /etc/apt/sources.list
