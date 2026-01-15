@@ -31,4 +31,5 @@ RUN apt-get install --no-install-recommends -y \
     libsdl2-dev \
     libsdl2-ttf-dev \
     libwebkit2gtk-4.0-dev \
-    libvte-2.91-dev
+    libvte-2.91-dev \
+    libv4l-dev

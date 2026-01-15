@@ -32,4 +32,5 @@ RUN apt-get install --no-install-recommends -y \
     libsdl2-ttf-dev \
     libsoup-3.0-dev \
     libwebkit2gtk-4.1-dev \
-    libvte-2.91-dev
+    libvte-2.91-dev \
+    libv4l-dev
