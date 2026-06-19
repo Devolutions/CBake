@@ -44,6 +44,24 @@ function Remove-CBakeSymbolicLinks() {
     }
 }
 
+function Invoke-CBakeNativeCommand() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FilePath,
+        [Parameter()]
+        [string[]] $ArgumentList = @()
+    )
+
+    Write-Host "$FilePath $($ArgumentList -Join ' ')"
+    & $FilePath @ArgumentList
+    $ExitCode = $LASTEXITCODE
+
+    if ($ExitCode -ne 0) {
+        throw "$FilePath failed with exit code $ExitCode"
+    }
+}
+
 function Remove-CBakeExcludedFiles() {
     [CmdletBinding()]
     param(
@@ -83,7 +101,7 @@ function Remove-CBakeExcludedFiles() {
     )
 
     $ExcludeDirs | ForEach-Object {
-        $ExcludeDir = Join-Path $ExportPath $_
+        $ExcludeDir = Join-Path $RootPath $_.TrimStart('/', '\')
         Remove-Item -Path $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
 }
@@ -164,7 +182,7 @@ function Import-CBakeSysroot {
     $SysrootsPath = Get-CbakePath "sysroots"
     $SysrootPath = Join-Path $SysrootsPath "$distro-$arch"
     Remove-Item -Path $SysrootPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
-    & 'tar' 'xf' $PackageFile '-C' $SysrootsPath
+    Invoke-CBakeNativeCommand -FilePath 'tar' -ArgumentList @('xf', $PackageFile, '-C', $SysrootsPath)
 }
 
 function New-CBakeSysroot {
@@ -179,36 +197,42 @@ function New-CBakeSysroot {
         [switch] $SkipPackaging
     )
 
+    $ContainerTarFile = $null
     Push-Location
-    Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
+    try {
+        Set-Location $(Join-Path $(Get-CbakePath "recipes") $distro) -ErrorAction 'Stop'
 
-    if ([string]::IsNullOrEmpty($ExportPath)) {
-        $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
-    }
-    Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
+        if ([string]::IsNullOrEmpty($ExportPath)) {
+            $ExportPath = Join-Path $(Get-Location) "$distro-$arch"
+        }
+        Remove-Item -Path $ExportPath -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
 
-    Write-Host "Building $distro-$arch container"
-    Remove-Item -Path "$distro-$arch.tar" -ErrorAction 'SilentlyContinue' | Out-Null
+        Write-Host "Building $distro-$arch container"
+        $ContainerTarFile = "$distro-$arch.tar"
+        Remove-Item -Path $ContainerTarFile -ErrorAction 'SilentlyContinue' | Out-Null
 
-    $params = @('buildx',
-        'build', '.',
-        '-t', "$distro-$arch-sysroot",
-        '--platform', "linux/$arch",
-        '-o', "`"type=tar,dest=$distro-$arch.tar`"")
-    Write-Host "docker $($params -Join ' ')"
-    Start-Process -FilePath 'docker' -ArgumentList $Params -Wait
-    New-Item -Path $ExportPath -ItemType Directory -ErrorAction 'SilentlyContinue' | Out-Null
-    & 'tar' '-xf' "$distro-$arch.tar" '-C' "$ExportPath"
-    Remove-Item -Path "$distro-$arch.tar" -ErrorAction 'SilentlyContinue' | Out-Null
+        $params = @('buildx',
+            'build', '.',
+            '-t', "$distro-$arch-sysroot",
+            '--platform', "linux/$arch",
+            '-o', "type=tar,dest=$ContainerTarFile")
+        Invoke-CBakeNativeCommand -FilePath 'docker' -ArgumentList $Params
+        New-Item -Path $ExportPath -ItemType Directory -ErrorAction 'SilentlyContinue' | Out-Null
+        Invoke-CBakeNativeCommand -FilePath 'tar' -ArgumentList @('-xf', $ContainerTarFile, '-C', "$ExportPath")
 
-    Write-Host "Optimizing $distro-$arch sysroot"
-    Optimize-CBakeSysroot $ExportPath
+        Write-Host "Optimizing $distro-$arch sysroot"
+        Optimize-CBakeSysroot $ExportPath
 
-    if (-Not $SkipPackaging) {
-        Write-Host "Compressing $distro-$arch sysroot"
-        $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
-        Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
-        & 'tar' 'cfJ' $PackageFile "$distro-$arch"
+        if (-Not $SkipPackaging) {
+            Write-Host "Compressing $distro-$arch sysroot"
+            $PackageFile = Join-Path $(Get-CbakePath "packages") "$distro-$arch-sysroot.tar.xz"
+            Remove-Item -Path $PackageFile -Force -ErrorAction 'SilentlyContinue' | Out-Null
+            Invoke-CBakeNativeCommand -FilePath 'tar' -ArgumentList @('cfJ', $PackageFile, "$distro-$arch")
+        }
+    } finally {
+        if (-Not [string]::IsNullOrEmpty($ContainerTarFile)) {
+            Remove-Item -Path $ContainerTarFile -ErrorAction 'SilentlyContinue' | Out-Null
+        }
         Pop-Location
     }
 }

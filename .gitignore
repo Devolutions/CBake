@@ -1,1 +1,29 @@
+# OS and editor files
 *.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.tmp
+*.log
+
+# CMake and local build output
+build/
+build-*/
+cmake-build-*/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+testResults.xml
+
+# CBake generated artifacts
+packages/*
+!packages/.gitignore
+sysroots/*
+!sysroots/.gitignore
+recipes/**/*.tar

@@ -26,19 +26,40 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          $ErrorActionPreference = 'Stop'
+
           $RunId = '${{ github.event.inputs.run_id }}'
           if ($RunId -eq 'latest') {
-            $RunId = $(gh run list -w 'cbake sysroots' --json 'status,databaseId,conclusion') |
+            $RunsJson = & gh run list -w 'cbake sysroots' --json 'status,databaseId,conclusion' --limit 50
+            if ($LASTEXITCODE -ne 0) {
+              throw "gh run list failed with exit code $LASTEXITCODE"
+            }
+
+            $RunId = $RunsJson |
               ConvertFrom-Json | Where-Object { ($_.status -eq 'completed') -and ($_.conclusion -eq 'success') } |
               Select-Object -First 1 -ExpandProperty databaseId
           }
+
+          if ([string]::IsNullOrEmpty($RunId)) {
+            throw "No successful cbake sysroots workflow run found"
+          }
+
           New-Item -Path "download" -ItemType Directory -Force | Out-Null
           Write-Host "Downloading run $RunId"
           & gh run download $RunId --dir "download"
-          Get-ChildItem "download/*/*.tar.xz" | ForEach-Object {
-            Move-Item $_.FullName $_.Directory.Parent
-            Remove-Item $_.Directory -ErrorAction SilentlyContinue
+          if ($LASTEXITCODE -ne 0) {
+            throw "gh run download failed with exit code $LASTEXITCODE"
           }
+
+          $Artifacts = @(Get-ChildItem -Path "download" -Filter "*.tar.xz" -Recurse)
+          if ($Artifacts.Count -eq 0) {
+            throw "No sysroot archives found in workflow run $RunId"
+          }
+
+          $Artifacts | ForEach-Object {
+            Move-Item $_.FullName $_.Directory.Parent.FullName
+          }
+          Get-ChildItem -Path "download" -Directory | Remove-Item -Recurse -Force
 
       - name: Create GitHub release
         shell: pwsh
@@ -46,14 +67,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: download
         run: |
+          $ErrorActionPreference = 'Stop'
+
           $Version = '${{ github.event.inputs.version }}'
           if ($Version -eq 'latest') {
             $Version = (Get-Date -Format "yyyy.MM.dd") + ".0"
           }
 
-          $HashPath = 'checksums'
-          $Files = Get-Item *.tar.xz | % { Get-FileHash -Algorithm SHA256 $_.FullName }
-          $Files | % { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } | Out-File -FilePath $HashPath -Append -Encoding ASCII
+          $Assets = @(Get-Item *.tar.xz)
+          if ($Assets.Count -eq 0) {
+            throw "No sysroot archives found for release"
+          }
+
+          $HashPath = 'checksums.txt'
+          $Files = $Assets | ForEach-Object { Get-FileHash -Algorithm SHA256 $_.FullName }
+          $Files | ForEach-Object { "$($_.Hash)  $(Split-Path $_.Path -Leaf)" } |
+            Set-Content -Path $HashPath -Encoding ASCII
 
           echo "::group::checksums"
           Get-Content $HashPath
@@ -62,5 +91,9 @@ jobs:
           $ReleaseTag = "v$Version"
           $ReleaseTitle = "CBake v${Version}"
           $Repository = $Env:GITHUB_REPOSITORY
+          $ReleaseAssets = @($Assets.FullName) + (Resolve-Path $HashPath).Path
 
-          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle ./*
+          & gh release create $ReleaseTag --repo $Repository --title $ReleaseTitle @ReleaseAssets
+          if ($LASTEXITCODE -ne 0) {
+            throw "gh release create failed with exit code $LASTEXITCODE"
+          }
