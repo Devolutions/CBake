@@ -24,6 +24,12 @@ jobs:
         include:
           - os: linux
             runner: ubuntu-22.04
+          - distro: ubuntu-18.04
+            arch: arm
+            runner: ubuntu-22.04
+          - distro: alpine-3.17
+            arch: arm
+            runner: ubuntu-22.04
 
     steps:
       - name: Check out ${{ github.repository }}

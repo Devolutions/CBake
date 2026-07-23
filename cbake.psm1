@@ -185,6 +185,19 @@ function Import-CBakeSysroot {
     Invoke-CBakeNativeCommand -FilePath 'tar' -ArgumentList @('xf', $PackageFile, '-C', $SysrootsPath)
 }
 
+function Get-CBakeDockerPlatform {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Arch
+    )
+
+    switch ($Arch) {
+        'arm' { 'linux/arm/v7' }
+        default { "linux/$Arch" }
+    }
+}
+
 function New-CBakeSysroot {
     param(
         [Parameter(Mandatory = $true)]
@@ -214,7 +227,7 @@ function New-CBakeSysroot {
         $params = @('buildx',
             'build', '.',
             '-t', "$distro-$arch-sysroot",
-            '--platform', "linux/$arch",
+            '--platform', (Get-CBakeDockerPlatform $Arch),
             '-o', "type=tar,dest=$ContainerTarFile")
         Invoke-CBakeNativeCommand -FilePath 'docker' -ArgumentList $Params
         New-Item -Path $ExportPath -ItemType Directory -ErrorAction 'SilentlyContinue' | Out-Null

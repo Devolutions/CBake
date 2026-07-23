@@ -67,7 +67,7 @@ You can also use the command wrapper:
 
 ## Supported Linux sysroot recipes
 
-The GitHub Actions matrix currently builds each recipe for `amd64` and `arm64`:
+The GitHub Actions matrix builds every recipe for `amd64` and `arm64`. It also builds the fixed ARMv7 compatibility baselines below with the `arm` label. `arm` is intentionally aligned with the `linux-arm` and `linux-musl-arm` runtime identifiers; CBake maps it to Docker buildx platform `linux/arm/v7`.
 
 | Family | Recipes |
 | --- | --- |
@@ -75,6 +75,13 @@ The GitHub Actions matrix currently builds each recipe for `amd64` and `arm64`:
 | Debian | `debian-10`, `debian-11`, `debian-12` |
 | RHEL | `rhel8`, `rhel9` |
 | Alpine | `alpine-3.17`, `alpine-3.21` |
+
+| Compatibility baseline | Archive | Imported sysroot | GCC and Clang target | GCC target directory |
+| --- | --- | --- | --- | --- |
+| Ubuntu 18.04 (glibc) | `ubuntu-18.04-arm-sysroot.tar.xz` | `sysroots\ubuntu-18.04-arm` | `arm-linux-gnueabihf` | `usr\lib\gcc\arm-linux-gnueabihf\<gcc-version>` |
+| Alpine 3.17 (musl) | `alpine-3.17-arm-sysroot.tar.xz` | `sysroots\alpine-3.17-arm` | `armv7-alpine-linux-musleabihf` | `usr\lib\gcc\armv7-alpine-linux-musleabihf\<gcc-version>` |
+
+Import either archive with `Import-CBakeSysroot -Distro '<distro-version>' -Arch 'arm'`. Set `SYSROOT_NAME` to the imported directory name (for example, `ubuntu-18.04-arm`). The Linux toolchain finds the target triple from its `usr\lib\gcc\<target>\<gcc-version>` layout and applies `-march=armv7-a` for this architecture.
 
 To add a distribution, create a new directory under `recipes\` with a Dockerfile and update the workflow matrix if CI should build it.
 
@@ -103,7 +110,7 @@ Use the target-specific files in `cmake\` when building for non-Linux platforms:
 | --- | --- |
 | Android | `android-arm.toolchain.cmake`, `android-arm64.toolchain.cmake`, `android-x86.toolchain.cmake`, `android-x86_64.toolchain.cmake` |
 | iOS | `ios-arm.toolchain.cmake`, `ios-arm64.toolchain.cmake`, `ios-armv7.toolchain.cmake`, `ios-x86_64.toolchain.cmake` |
-| Linux | `linux-amd64.toolchain.cmake`, `linux-arm64.toolchain.cmake`, `linux.toolchain.cmake` |
+| Linux | `linux-amd64.toolchain.cmake`, `linux-arm.toolchain.cmake`, `linux-arm64.toolchain.cmake`, `linux.toolchain.cmake` |
 | Windows | `windows-x86.toolchain.cmake`, `windows-x64.toolchain.cmake`, `windows-arm64.toolchain.cmake` |
 
 Example:

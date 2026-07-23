@@ -113,6 +113,20 @@ Describe 'Import-CBakeSysroot' {
                 $ArgumentList[3] -eq $script:SysrootsPath
         }
     }
+
+    It 'uses the ARMv7 compatibility-baseline archive name' {
+        $PackageFile = Join-Path $script:PackagesPath 'alpine-3.17-arm-sysroot.tar.xz'
+        New-Item -Path $PackageFile -ItemType File -Force | Out-Null
+        Mock -ModuleName cbake Invoke-CBakeNativeCommand {}
+
+        Import-CBakeSysroot -Distro 'alpine-3.17' -Arch 'arm'
+
+        Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
+            $FilePath -eq 'tar' -and
+                $ArgumentList[1] -eq $PackageFile -and
+                $ArgumentList[3] -eq $script:SysrootsPath
+        }
+    }
 }
 
 Describe 'New-CBakeSysroot' {
@@ -120,6 +134,7 @@ Describe 'New-CBakeSysroot' {
         $script:RecipesPath = Join-Path $TestDrive 'recipes'
         $script:PackagesPath = Join-Path $TestDrive 'packages'
         New-Item -Path (Join-Path $script:RecipesPath 'ubuntu-24.04') -ItemType Directory -Force | Out-Null
+        New-Item -Path (Join-Path $script:RecipesPath 'ubuntu-18.04') -ItemType Directory -Force | Out-Null
         New-Item -Path $script:PackagesPath -ItemType Directory -Force | Out-Null
 
         $Env:CBAKE_RECIPES_DIR = $script:RecipesPath
@@ -152,6 +167,25 @@ Describe 'New-CBakeSysroot' {
         Should -Invoke -CommandName Optimize-CBakeSysroot -ModuleName cbake -Exactly -Times 1
     }
 
+    It 'maps the ARM compatibility label to the ARMv7 Docker platform' {
+        $PackageFile = Join-Path $script:PackagesPath 'ubuntu-18.04-arm-sysroot.tar.xz'
+        Mock -ModuleName cbake Invoke-CBakeNativeCommand {}
+        Mock -ModuleName cbake Optimize-CBakeSysroot {}
+
+        New-CBakeSysroot -Distro 'ubuntu-18.04' -Arch 'arm'
+
+        Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
+            $FilePath -eq 'docker' -and
+                $ArgumentList -contains 'linux/arm/v7' -and
+                $ArgumentList -contains 'type=tar,dest=ubuntu-18.04-arm.tar'
+        }
+        Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
+            $FilePath -eq 'tar' -and
+                $ArgumentList[0] -eq 'cfJ' -and
+                $ArgumentList[1] -eq $PackageFile
+        }
+    }
+
     It 'restores the caller location when a checked native command fails' {
         $StartingLocation = (Get-Location).ProviderPath
         Mock -ModuleName cbake Invoke-CBakeNativeCommand {
@@ -161,6 +195,62 @@ Describe 'New-CBakeSysroot' {
         { New-CBakeSysroot -Distro 'ubuntu-24.04' -Arch 'arm64' } | Should -Throw '*docker failed*'
 
         (Get-Location).ProviderPath | Should -Be $StartingLocation
+    }
+}
+
+Describe 'Linux ARMv7 toolchains' {
+    It 'defines an ARMv7 Linux entry point and ARMv7 compiler flags' {
+        $LinuxToolchain = Get-Content (Join-Path $script:RepoRoot 'cmake\linux.toolchain.cmake') -Raw
+        $LinuxArmToolchain = Join-Path $script:RepoRoot 'cmake\linux-arm.toolchain.cmake'
+
+        Test-Path $LinuxArmToolchain | Should -BeTrue
+        Get-Content $LinuxArmToolchain -Raw | Should -Match 'set\(CMAKE_SYSTEM_PROCESSOR armv7l\)'
+        $LinuxToolchain | Should -Match 'SYSROOT_ARCH STREQUAL "arm"'
+        $LinuxToolchain | Should -Match 'set\(CROSS_MACHINE_FLAGS "-march=armv7-a"\)'
+    }
+
+    It 'derives the ARMv7 target from the <SysrootName> GCC layout' -TestCases @(
+        @{
+            SysrootName = 'ubuntu-18.04-arm'
+            Target = 'arm-linux-gnueabihf'
+        },
+        @{
+            SysrootName = 'alpine-3.17-arm'
+            Target = 'armv7-alpine-linux-musleabihf'
+        }
+    ) {
+        param($SysrootName, $Target)
+
+        $SysrootPath = Join-Path $TestDrive $SysrootName
+        $LLVMPath = Join-Path $TestDrive 'llvm'
+        $CMakeScriptPath = Join-Path $TestDrive 'verify-armv7.cmake'
+        New-Item -ItemType Directory -Force -Path (Join-Path $SysrootPath "usr\lib\gcc\$Target\12"), $LLVMPath | Out-Null
+
+        $CMakeScript = @'
+set(SYSROOT_NAME "__SYSROOT_NAME__")
+set(CMAKE_SYSROOT "__SYSROOT_PATH__")
+set(LLVM_PREFIX "__LLVM_PATH__")
+include("__TOOLCHAIN_PATH__")
+if(NOT CMAKE_C_COMPILER_TARGET STREQUAL "__TARGET__")
+    message(FATAL_ERROR "Unexpected compiler target: ${CMAKE_C_COMPILER_TARGET}")
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "armv7l")
+    message(FATAL_ERROR "Unexpected system processor: ${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+string(FIND "${CMAKE_C_FLAGS}" "-march=armv7-a" ARMV7_FLAG_INDEX)
+if(ARMV7_FLAG_INDEX EQUAL -1)
+    message(FATAL_ERROR "ARMv7 compiler flag is missing")
+endif()
+'@
+        $CMakeScript = $CMakeScript.Replace('__SYSROOT_NAME__', $SysrootName).
+            Replace('__SYSROOT_PATH__', $SysrootPath.Replace('\', '/')).
+            Replace('__LLVM_PATH__', $LLVMPath.Replace('\', '/')).
+            Replace('__TOOLCHAIN_PATH__', (Join-Path $script:RepoRoot 'cmake\linux.toolchain.cmake').Replace('\', '/')).
+            Replace('__TARGET__', $Target)
+        Set-Content -Path $CMakeScriptPath -Value $CMakeScript -NoNewline
+
+        & cmake -P $CMakeScriptPath | Out-Null
+        $LASTEXITCODE | Should -Be 0
     }
 }
 }
