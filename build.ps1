@@ -1,5 +1,7 @@
 #!/usr/bin/env pwsh
 
+$ErrorActionPreference = 'Stop'
+
 if (-Not (Test-Path Env:CBAKE_HOME)) {
     $Env:CBAKE_HOME = $PSScriptRoot
 }

@@ -6,19 +6,19 @@ function Convert-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
+    $ReparsePoints = Get-ChildItem -LiteralPath $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
     $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
         $Directory = $_.Directory
         $Target = Join-Path $RootPath $_.LinkTarget
-        if (Test-Path $Target) {
+        if (Test-Path -LiteralPath $Target) {
             Push-Location
-            Set-Location $Directory
-            $Target = Resolve-Path -Path $Target -Relative
-            Remove-Item $Source | Out-Null
-            New-Item -ItemType SymbolicLink -Path $Source -Target $Target | Out-Null
+            Set-Location -LiteralPath $Directory
+            $Target = Resolve-Path -LiteralPath $Target -Relative
+            Remove-Item -LiteralPath $Source | Out-Null
+            New-Item -ItemType SymbolicLink -LiteralPath $Source -Target $Target | Out-Null
             Pop-Location
         } else {
             Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
@@ -33,7 +33,7 @@ function Remove-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
+    $ReparsePoints = Get-ChildItem -LiteralPath $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
     $ReparsePoints | ForEach-Object {
         $Source = $_.FullName
@@ -102,7 +102,7 @@ function Remove-CBakeExcludedFiles() {
 
     $ExcludeDirs | ForEach-Object {
         $ExcludeDir = Join-Path $RootPath $_.TrimStart('/', '\')
-        Remove-Item -Path $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
+        Remove-Item -LiteralPath $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
 }
 

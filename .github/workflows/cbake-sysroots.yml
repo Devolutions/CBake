@@ -43,3 +43,4 @@ jobs:
         with:
           name: ${{matrix.distro}}-${{matrix.arch}}-sysroot
           path: packages/${{matrix.distro}}-${{matrix.arch}}-sysroot.tar.xz
+          if-no-files-found: error

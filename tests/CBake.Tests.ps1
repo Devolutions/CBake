@@ -70,6 +70,16 @@ Describe 'Remove-CBakeExcludedFiles' {
         Test-Path $ExcludedPath | Should -BeFalse
         Test-Path $KeptPath | Should -BeTrue
     }
+
+    It 'handles wildcard characters in the provided root path literally' {
+        $RootPath = Join-Path $TestDrive 'sysroot[arm]'
+        $ExcludedPath = Join-Path $RootPath 'usr\bin'
+        New-Item -Path $ExcludedPath -ItemType Directory -Force | Out-Null
+
+        Remove-CBakeExcludedFiles $RootPath
+
+        Test-Path -LiteralPath $ExcludedPath | Should -BeFalse
+    }
 }
 
 Describe 'Invoke-CBakeNativeCommand' {
