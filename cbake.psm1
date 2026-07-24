@@ -6,20 +6,24 @@ function Convert-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
+    $ReparsePoints = Get-ChildItem -LiteralPath $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
-    $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
+    $AbsSymlinks = $ReparsePoints | Where-Object {
+        -not [string]::IsNullOrEmpty($_.LinkTarget) -and $_.LinkTarget.StartsWith('/')
+    }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
-        $Directory = $_.Directory
-        $Target = Join-Path $RootPath $_.LinkTarget
-        if (Test-Path $Target) {
-            Push-Location
-            Set-Location $Directory
-            $Target = Resolve-Path -Path $Target -Relative
-            Remove-Item $Source | Out-Null
-            New-Item -ItemType SymbolicLink -Path $Source -Target $Target | Out-Null
-            Pop-Location
+        $Directory = [IO.Path]::GetDirectoryName($Source)
+        $IsDirectory = $_.PSIsContainer
+        $Target = Join-Path $RootPath $_.LinkTarget.TrimStart('/')
+        if (Test-Path -LiteralPath $Target) {
+            $RelativeTarget = [IO.Path]::GetRelativePath($Directory, $Target)
+            Remove-Item -LiteralPath $Source | Out-Null
+            if ($IsDirectory) {
+                [IO.Directory]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
+            } else {
+                [IO.File]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
+            }
         } else {
             Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
         }
@@ -33,7 +37,7 @@ function Remove-CBakeSymbolicLinks() {
         [string] $RootPath
     )
 
-    $ReparsePoints = Get-ChildItem $RootPath -Recurse |
+    $ReparsePoints = Get-ChildItem -LiteralPath $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
     $ReparsePoints | ForEach-Object {
         $Source = $_.FullName
@@ -102,7 +106,7 @@ function Remove-CBakeExcludedFiles() {
 
     $ExcludeDirs | ForEach-Object {
         $ExcludeDir = Join-Path $RootPath $_.TrimStart('/', '\')
-        Remove-Item -Path $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
+        Remove-Item -LiteralPath $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
 }
 
@@ -185,6 +189,19 @@ function Import-CBakeSysroot {
     Invoke-CBakeNativeCommand -FilePath 'tar' -ArgumentList @('xf', $PackageFile, '-C', $SysrootsPath)
 }
 
+function Get-CBakeDockerPlatform {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Arch
+    )
+
+    switch ($Arch) {
+        'arm' { 'linux/arm/v7' }
+        default { "linux/$Arch" }
+    }
+}
+
 function New-CBakeSysroot {
     param(
         [Parameter(Mandatory = $true)]
@@ -214,7 +231,7 @@ function New-CBakeSysroot {
         $params = @('buildx',
             'build', '.',
             '-t', "$distro-$arch-sysroot",
-            '--platform', "linux/$arch",
+            '--platform', (Get-CBakeDockerPlatform $Arch),
             '-o', "type=tar,dest=$ContainerTarFile")
         Invoke-CBakeNativeCommand -FilePath 'docker' -ArgumentList $Params
         New-Item -Path $ExportPath -ItemType Directory -ErrorAction 'SilentlyContinue' | Out-Null
