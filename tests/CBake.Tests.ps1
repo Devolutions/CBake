@@ -166,12 +166,12 @@ Describe 'Import-CBakeSysroot' {
         }
     }
 
-    It 'uses the ARMv7 compatibility-baseline archive name' {
-        $PackageFile = Join-Path $script:PackagesPath 'alpine-3.17-arm-sysroot.tar.xz'
+    It 'uses the Ubuntu 22.04 ARMv7 archive name' {
+        $PackageFile = Join-Path $script:PackagesPath 'ubuntu-22.04-arm-sysroot.tar.xz'
         New-Item -Path $PackageFile -ItemType File -Force | Out-Null
         Mock -ModuleName cbake Invoke-CBakeNativeCommand {}
 
-        Import-CBakeSysroot -Distro 'alpine-3.17' -Arch 'arm'
+        Import-CBakeSysroot -Distro 'ubuntu-22.04' -Arch 'arm'
 
         Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
             $FilePath -eq 'tar' -and
@@ -187,6 +187,7 @@ Describe 'New-CBakeSysroot' {
         $script:PackagesPath = Join-Path $TestDrive 'packages'
         New-Item -Path (Join-Path $script:RecipesPath 'ubuntu-24.04') -ItemType Directory -Force | Out-Null
         New-Item -Path (Join-Path $script:RecipesPath 'ubuntu-18.04') -ItemType Directory -Force | Out-Null
+        New-Item -Path (Join-Path $script:RecipesPath 'ubuntu-22.04') -ItemType Directory -Force | Out-Null
         New-Item -Path $script:PackagesPath -ItemType Directory -Force | Out-Null
 
         $Env:CBAKE_RECIPES_DIR = $script:RecipesPath
@@ -219,23 +220,24 @@ Describe 'New-CBakeSysroot' {
         Should -Invoke -CommandName Optimize-CBakeSysroot -ModuleName cbake -Exactly -Times 1
     }
 
-    It 'maps the ARM compatibility label to the ARMv7 Docker platform' {
-        $PackageFile = Join-Path $script:PackagesPath 'ubuntu-18.04-arm-sysroot.tar.xz'
+    It 'normalizes and packages Ubuntu 22.04 ARMv7 output with the stable ARM label' {
+        $PackageFile = Join-Path $script:PackagesPath 'ubuntu-22.04-arm-sysroot.tar.xz'
         Mock -ModuleName cbake Invoke-CBakeNativeCommand {}
         Mock -ModuleName cbake Optimize-CBakeSysroot {}
 
-        New-CBakeSysroot -Distro 'ubuntu-18.04' -Arch 'arm'
+        New-CBakeSysroot -Distro 'ubuntu-22.04' -Arch 'arm'
 
         Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
             $FilePath -eq 'docker' -and
                 $ArgumentList -contains 'linux/arm/v7' -and
-                $ArgumentList -contains 'type=tar,dest=ubuntu-18.04-arm.tar'
+                $ArgumentList -contains 'type=tar,dest=ubuntu-22.04-arm.tar'
         }
         Should -Invoke -CommandName Invoke-CBakeNativeCommand -ModuleName cbake -Exactly -Times 1 -ParameterFilter {
             $FilePath -eq 'tar' -and
                 $ArgumentList[0] -eq 'cfJ' -and
                 $ArgumentList[1] -eq $PackageFile
         }
+        Should -Invoke -CommandName Optimize-CBakeSysroot -ModuleName cbake -Exactly -Times 1
     }
 
     It 'restores the caller location when a checked native command fails' {
@@ -264,6 +266,10 @@ Describe 'Linux ARMv7 toolchains' {
     It 'derives the ARMv7 target from the <SysrootName> GCC layout' -TestCases @(
         @{
             SysrootName = 'ubuntu-18.04-arm'
+            Target = 'arm-linux-gnueabihf'
+        },
+        @{
+            SysrootName = 'ubuntu-22.04-arm'
             Target = 'arm-linux-gnueabihf'
         },
         @{
@@ -303,6 +309,16 @@ endif()
 
         & cmake -P $CMakeScriptPath | Out-Null
         $LASTEXITCODE | Should -Be 0
+    }
+}
+
+Describe 'Sysroot build workflow' {
+    It 'builds the Ubuntu 22.04 ARMv7 archive in the normal matrix' {
+        $WorkflowPath = Join-Path $script:RepoRoot '.github\workflows\cbake-sysroots.yml'
+        $Workflow = Get-Content -Path $WorkflowPath -Raw
+
+        $Workflow | Should -Match '(?ms)- distro: ubuntu-22\.04\s+arch: arm'
+        $Workflow | Should -Match 'packages/\$\{\{matrix\.distro\}\}-\$\{\{matrix\.arch\}\}-sysroot\.tar\.xz'
     }
 }
 }

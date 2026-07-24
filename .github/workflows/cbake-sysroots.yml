@@ -13,6 +13,8 @@ jobs:
         include:
           - distro: ubuntu-18.04
             arch: arm
+          - distro: ubuntu-22.04
+            arch: arm
           - distro: alpine-3.17
             arch: arm
 
