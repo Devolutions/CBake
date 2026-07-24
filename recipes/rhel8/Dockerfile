@@ -4,7 +4,7 @@ RUN yum update -y
 
 RUN yum install -y \
     gcc \
-    g++ \
+    gcc-c++ \
     zlib-devel \
     openssl-devel \
     pam \

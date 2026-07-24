@@ -71,6 +71,19 @@ Describe 'Convert-CBakeSymbolicLinks' {
         $Link.LinkTarget | Should -Be 'target'
         $Link.ResolveLinkTarget($true).FullName | Should -Be $TargetPath
     }
+
+    It 'converts symlinks from a read-only sysroot on Linux' -Skip:(-not $IsLinux) {
+        $RootPath = Join-Path $TestDrive 'sysroot'
+        $TargetPath = Join-Path $RootPath 'target'
+        $SourcePath = Join-Path $RootPath 'link'
+        New-Item -Path $TargetPath -ItemType Directory -Force | Out-Null
+        [IO.Directory]::CreateSymbolicLink($SourcePath, '/target') | Out-Null
+        & chmod 'a-w' $RootPath
+
+        Optimize-CBakeSysroot $RootPath
+
+        (Get-Item -LiteralPath $SourcePath).LinkTarget | Should -Be 'target'
+    }
 }
 
 Describe 'Remove-CBakeExcludedFiles' {
@@ -91,6 +104,19 @@ Describe 'Remove-CBakeExcludedFiles' {
         $RootPath = Join-Path $TestDrive 'sysroot[arm]'
         $ExcludedPath = Join-Path $RootPath 'usr\bin'
         New-Item -Path $ExcludedPath -ItemType Directory -Force | Out-Null
+
+        Remove-CBakeExcludedFiles $RootPath
+
+        Test-Path -LiteralPath $ExcludedPath | Should -BeFalse
+    }
+
+    It 'removes read-only excluded directories on Linux' -Skip:(-not $IsLinux) {
+        $RootPath = Join-Path $TestDrive 'sysroot'
+        $ExcludedPath = Join-Path $RootPath 'usr\bin'
+        $ExcludedFile = Join-Path $ExcludedPath 'tool'
+        New-Item -Path $ExcludedPath -ItemType Directory -Force | Out-Null
+        New-Item -Path $ExcludedFile -ItemType File -Force | Out-Null
+        & chmod 'a-w' $ExcludedPath
 
         Remove-CBakeExcludedFiles $RootPath
 
