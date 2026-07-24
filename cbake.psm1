@@ -8,23 +8,22 @@ function Convert-CBakeSymbolicLinks() {
 
     $ReparsePoints = Get-ChildItem -LiteralPath $RootPath -Recurse |
         Where-Object { $_.Attributes -band [IO.FileAttributes]::ReparsePoint }
-    $AbsSymlinks = $ReparsePoints | Where-Object { $_.LinkTarget.StartsWith('/') }
+    $AbsSymlinks = $ReparsePoints | Where-Object {
+        -not [string]::IsNullOrEmpty($_.LinkTarget) -and $_.LinkTarget.StartsWith('/')
+    }
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
-        $Directory = $_.Directory
+        $Directory = [IO.Path]::GetDirectoryName($Source)
         $IsDirectory = $_.PSIsContainer
-        $Target = Join-Path $RootPath $_.LinkTarget
+        $Target = Join-Path $RootPath $_.LinkTarget.TrimStart('/')
         if (Test-Path -LiteralPath $Target) {
-            Push-Location
-            Set-Location -LiteralPath $Directory
-            $Target = Resolve-Path -LiteralPath $Target -Relative
+            $RelativeTarget = [IO.Path]::GetRelativePath($Directory, $Target)
             Remove-Item -LiteralPath $Source | Out-Null
             if ($IsDirectory) {
-                [IO.Directory]::CreateSymbolicLink($Source, $Target) | Out-Null
+                [IO.Directory]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
             } else {
-                [IO.File]::CreateSymbolicLink($Source, $Target) | Out-Null
+                [IO.File]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
             }
-            Pop-Location
         } else {
             Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
         }

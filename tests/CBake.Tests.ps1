@@ -57,6 +57,22 @@ Describe 'Get-CBakePath' {
     }
 }
 
+Describe 'Convert-CBakeSymbolicLinks' {
+    It 'converts absolute symlinks to relative targets with wildcard characters in their names' {
+        $RootPath = Join-Path $TestDrive 'sysroot'
+        $TargetPath = Join-Path $RootPath 'target'
+        $SourcePath = Join-Path $RootPath 'link[arm]'
+        New-Item -Path $TargetPath -ItemType Directory -Force | Out-Null
+        [IO.Directory]::CreateSymbolicLink($SourcePath, '/target') | Out-Null
+
+        Convert-CBakeSymbolicLinks $RootPath
+
+        $Link = Get-Item -LiteralPath $SourcePath
+        $Link.LinkTarget | Should -Be 'target'
+        $Link.ResolveLinkTarget($true).FullName | Should -Be $TargetPath
+    }
+}
+
 Describe 'Remove-CBakeExcludedFiles' {
     It 'removes excluded directories from the provided root path' {
         $RootPath = Join-Path $TestDrive 'sysroot'
