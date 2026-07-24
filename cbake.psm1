@@ -12,13 +12,18 @@ function Convert-CBakeSymbolicLinks() {
     $AbsSymlinks | ForEach-Object {
         $Source = $_.FullName
         $Directory = $_.Directory
+        $IsDirectory = $_.PSIsContainer
         $Target = Join-Path $RootPath $_.LinkTarget
         if (Test-Path -LiteralPath $Target) {
             Push-Location
             Set-Location -LiteralPath $Directory
             $Target = Resolve-Path -LiteralPath $Target -Relative
             Remove-Item -LiteralPath $Source | Out-Null
-            New-Item -ItemType SymbolicLink -LiteralPath $Source -Target $Target | Out-Null
+            if ($IsDirectory) {
+                [IO.Directory]::CreateSymbolicLink($Source, $Target) | Out-Null
+            } else {
+                [IO.File]::CreateSymbolicLink($Source, $Target) | Out-Null
+            }
             Pop-Location
         } else {
             Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
