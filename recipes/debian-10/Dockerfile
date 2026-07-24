@@ -2,8 +2,11 @@ FROM debian:buster-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN sed -i 's/deb.debian.com/debian.mirrors.ovh.net/g' /etc/apt/sources.list
-RUN apt-get update -y
+RUN printf '%s\n' \
+    'deb http://archive.debian.org/debian buster main' \
+    'deb http://archive.debian.org/debian-security buster/updates main' \
+    > /etc/apt/sources.list
+RUN apt-get -o Acquire::Check-Valid-Until=false update -y
 
 RUN apt-get install --no-install-recommends -y \
     gcc \

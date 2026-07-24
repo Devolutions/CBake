@@ -96,6 +96,19 @@ Describe 'Remove-CBakeExcludedFiles' {
 
         Test-Path -LiteralPath $ExcludedPath | Should -BeFalse
     }
+
+    It 'removes read-only excluded directories on Linux' -Skip:(-not $IsLinux) {
+        $RootPath = Join-Path $TestDrive 'sysroot'
+        $ExcludedPath = Join-Path $RootPath 'usr\bin'
+        $ExcludedFile = Join-Path $ExcludedPath 'tool'
+        New-Item -Path $ExcludedPath -ItemType Directory -Force | Out-Null
+        New-Item -Path $ExcludedFile -ItemType File -Force | Out-Null
+        & chmod 'a-w' $ExcludedPath
+
+        Remove-CBakeExcludedFiles $RootPath
+
+        Test-Path -LiteralPath $ExcludedPath | Should -BeFalse
+    }
 }
 
 Describe 'Invoke-CBakeNativeCommand' {

@@ -106,6 +106,9 @@ function Remove-CBakeExcludedFiles() {
 
     $ExcludeDirs | ForEach-Object {
         $ExcludeDir = Join-Path $RootPath $_.TrimStart('/', '\')
+        if ($IsLinux -and (Test-Path -LiteralPath $ExcludeDir)) {
+            Invoke-CBakeNativeCommand -FilePath 'chmod' -ArgumentList @('-R', 'u+w', '--', $ExcludeDir)
+        }
         Remove-Item -LiteralPath $ExcludeDir -Recurse -Force -ErrorAction 'SilentlyContinue' | Out-Null
     }
 }
@@ -116,6 +119,10 @@ function Optimize-CBakeSysroot() {
         [Parameter(Mandatory = $true, Position = 0)]
         [string] $RootPath
     )
+
+    if ($IsLinux) {
+        Invoke-CBakeNativeCommand -FilePath 'chmod' -ArgumentList @('-R', 'u+w', '--', $RootPath)
+    }
 
     Convert-CBakeSymbolicLinks $RootPath
     Remove-CBakeExcludedFiles $RootPath
