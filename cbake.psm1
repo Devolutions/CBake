@@ -18,14 +18,22 @@ function Convert-CBakeSymbolicLinks() {
         $Target = Join-Path $RootPath $_.LinkTarget.TrimStart('/')
         if (Test-Path -LiteralPath $Target) {
             $RelativeTarget = [IO.Path]::GetRelativePath($Directory, $Target)
-            Remove-Item -LiteralPath $Source | Out-Null
+            if ($IsLinux) {
+                Invoke-CBakeNativeCommand -FilePath 'rm' -ArgumentList @('-f', '--', $Source)
+            } else {
+                Remove-Item -LiteralPath $Source | Out-Null
+            }
             if ($IsDirectory) {
                 [IO.Directory]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
             } else {
                 [IO.File]::CreateSymbolicLink($Source, $RelativeTarget) | Out-Null
             }
         } else {
-            Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
+            if ($IsLinux) {
+                Invoke-CBakeNativeCommand -FilePath 'rm' -ArgumentList @('-f', '--', $Source)
+            } else {
+                Remove-Item -LiteralPath $Source -ErrorAction 'SilentlyContinue' | Out-Null
+            }
         }
     }
 }
