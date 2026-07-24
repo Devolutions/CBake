@@ -1,12 +1,6 @@
 name: cbake sysroots
 on:
   workflow_dispatch:
-    inputs:
-      armv7_only:
-        description: Build only the Ubuntu 18.04 and Alpine 3.17 ARMv7 compatibility sysroots
-        required: false
-        default: false
-        type: boolean
 jobs:
   build:
     name: cbake sysroot [${{matrix.distro}}-${{matrix.arch}}]
@@ -14,9 +8,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: ${{ fromJSON(inputs.armv7_only && '["arm"]' || '["amd64", "arm64"]') }}
-        distro: ${{ fromJSON(inputs.armv7_only && '["ubuntu-18.04", "alpine-3.17"]' || '["ubuntu-18.04", "ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04", "debian-10", "debian-11", "debian-12", "rhel8", "rhel9", "alpine-3.17", "alpine-3.21"]') }}
-        include: ${{ fromJSON(inputs.armv7_only && '[]' || '[{"distro":"ubuntu-18.04","arch":"arm"},{"distro":"alpine-3.17","arch":"arm"}]') }}
+        arch: [amd64, arm64]
+        distro: [ubuntu-18.04, ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, debian-10, debian-11, debian-12, rhel8, rhel9, alpine-3.17, alpine-3.21]
+        include:
+          - distro: ubuntu-18.04
+            arch: arm
+          - distro: alpine-3.17
+            arch: arm
 
     steps:
       - name: Check out ${{ github.repository }}
